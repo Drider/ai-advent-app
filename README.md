@@ -1,6 +1,6 @@
-# Polza AI CLI
+# LLM CLI
 
-Небольшой интерактивный CLI для вопросов к языковой модели через Polza.ai и OpenAI SDK.
+Простая интерактивная CLI-утилита для общения с языковой моделью через OpenAI-совместимый API.
 
 ## Требования
 
@@ -15,15 +15,13 @@
 npm install
 ```
 
-Создайте в корне проекта файл `.env`:
+Создайте в корне проекта файл `.env` и укажите настройки API:
 
 ```dotenv
-POLZA_MODEL=provider/model
-POLZA_BASE_URL=https://polza.ai/api/v1
-POLZA_API_KEY=your-api-key
+LLM_MODEL=provider/model
+LLM_BASE_URL=https://api.example.com/v1
+LLM_API_KEY=your-api-key
 ```
-
-Укажите ID модели из [каталога Polza.ai](https://polza.ai/models) и свой API-ключ. Файл `.env` не нужно добавлять в Git.
 
 Запустите CLI:
 

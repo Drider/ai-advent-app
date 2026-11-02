@@ -11,9 +11,9 @@ function getRequiredEnv(name: string): string {
   return value;
 }
 
-const apiKey = getRequiredEnv('POLZA_API_KEY');
-const baseURL = getRequiredEnv('POLZA_BASE_URL');
-const model = getRequiredEnv('POLZA_MODEL');
+const apiKey = getRequiredEnv('LLM_API_KEY');
+const baseURL = getRequiredEnv('LLM_BASE_URL');
+const model = getRequiredEnv('LLM_MODEL');
 
 const client = new OpenAI({
   apiKey,
