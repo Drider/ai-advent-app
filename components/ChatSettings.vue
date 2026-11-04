@@ -1,15 +1,50 @@
 <script setup lang="ts">
+import type { ReasoningEffort } from '~/shared/types/chat'
+
 defineProps<{
   validationMessage: string
 }>()
 
 const maxOutputTokensEnabled = defineModel<boolean>('maxOutputTokensEnabled', { required: true })
 const maxOutputTokens = defineModel<number | null>('maxOutputTokens', { required: true })
+const stopSequenceEnabled = defineModel<boolean>('stopSequenceEnabled', { required: true })
+const stopSequence = defineModel<string>('stopSequence', { required: true })
+const reasoningEnabled = defineModel<boolean>('reasoningEnabled', { required: true })
+const reasoningEffort = defineModel<ReasoningEffort>('reasoningEffort', { required: true })
 const showRawFinishReason = defineModel<boolean>('showRawFinishReason', { required: true })
+
+const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
+  { label: 'Low', value: 'low' },
+  { label: 'High', value: 'high' },
+  { label: 'Max', value: 'max' },
+]
 </script>
 
 <template>
   <div class="chat-settings">
+    <div class="settings-option">
+      <UCheckbox
+        v-model="reasoningEnabled"
+        label="Рассуждения модели"
+        color="primary"
+      />
+
+      <UFormField
+        name="reasoningEffort"
+        description="Уровень рассуждений DeepSeek: low, high или max."
+      >
+        <USelect
+          v-model="reasoningEffort"
+          :items="reasoningOptions"
+          value-key="value"
+          label-key="label"
+          :disabled="!reasoningEnabled"
+          class="settings-select"
+          aria-label="Уровень рассуждений"
+        />
+      </UFormField>
+    </div>
+
     <div class="settings-option">
       <UCheckbox
         v-model="maxOutputTokensEnabled"
@@ -56,6 +91,28 @@ const showRawFinishReason = defineModel<boolean>('showRawFinishReason', { requir
       </UFormField>
     </div>
 
+    <div class="settings-option">
+      <UCheckbox
+        v-model="stopSequenceEnabled"
+        label="Stop sequence"
+        color="primary"
+      />
+
+      <UFormField
+        name="stopSequence"
+        description="Остановить генерацию при появлении этой последовательности."
+        :error="stopSequenceEnabled ? validationMessage || undefined : undefined"
+      >
+        <UInput
+          v-model="stopSequence"
+          :disabled="!stopSequenceEnabled"
+          placeholder="Например, <END>"
+          class="settings-input"
+          aria-label="Stop sequence"
+        />
+      </UFormField>
+    </div>
+
     <UCheckbox
       v-model="showRawFinishReason"
       label="Показывать rawFinishReason"
@@ -78,6 +135,14 @@ const showRawFinishReason = defineModel<boolean>('showRawFinishReason', { requir
 }
 
 .settings-number {
+  width: 100%;
+}
+
+.settings-input {
+  width: 100%;
+}
+
+.settings-select {
   width: 100%;
 }
 </style>

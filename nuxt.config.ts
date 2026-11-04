@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     llmApiKey: process.env.LLM_API_KEY ?? '',
     llmBaseUrl: process.env.LLM_BASE_URL ?? '',
     llmModel: process.env.LLM_MODEL ?? '',
+    llmLogLevel: process.env.LLM_LOG_LEVEL ?? 'basic',
   },
   typescript: {
     strict: true,

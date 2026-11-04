@@ -8,16 +8,30 @@ import type { ChatRequestOptions } from 'ai'
 import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming } from '@nuxt/ui/utils/ai'
 import { computed, ref, shallowRef } from 'vue'
-import type { ChatMessage } from '~/shared/types/chat'
+import type {
+  ChatMessage,
+  ChatRequestBody,
+  ReasoningEffort,
+} from '~/shared/types/chat'
+import { buildChatRequestBody } from '~/shared/utils/chat'
 
 const input = ref('')
 const maxOutputTokensEnabled = shallowRef(false)
 const maxOutputTokens = ref<number | null>(1000)
+const stopSequenceEnabled = shallowRef(false)
+const stopSequence = shallowRef('')
+const reasoningEnabled = shallowRef(true)
+const reasoningEffort = shallowRef<ReasoningEffort>('high')
 const showRawFinishReason = shallowRef(false)
 const sidebarOpen = ref(false)
 const validationMessage = ref('')
 const sessionSaving = ref(false)
 const sessionError = ref('')
+const runId = ref<string | null>(null)
+
+function ensureRunId(): string {
+  return runId.value ??= new Date().toISOString()
+}
 
 const {
   messages,
@@ -33,31 +47,45 @@ const {
   // напрямую из script setup.
   transport: new DefaultChatTransport<ChatMessage>({
     api: '/api/chat',
+    prepareSendMessagesRequest: ({ body, messages }) => ({
+      body: buildChatRequestBody(body, messages, ensureRunId()),
+    }),
   }),
 })
 
 const isPromptDisabled = computed(() => status.value === 'error' || sessionSaving.value)
 const isBusy = computed(() => status.value === 'submitted' || status.value === 'streaming')
 
-// Передаёт лимит токенов только при включении соответствующей настройки.
+// Передаёт только включённые ограничения генерации.
 function getRequestOptions(): ChatRequestOptions | undefined {
   validationMessage.value = ''
 
-  if (!maxOutputTokensEnabled.value) {
-    return undefined
+  const body: Pick<ChatRequestBody, 'maxOutputTokens' | 'stopSequence' | 'reasoning'> = {
+    reasoning: reasoningEnabled.value ? reasoningEffort.value : 'none',
   }
 
-  const value = Number(maxOutputTokens.value)
+  if (maxOutputTokensEnabled.value) {
+    const value = Number(maxOutputTokens.value)
 
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    validationMessage.value = 'Введите положительное целое число токенов.'
-    return undefined
+    if (!Number.isSafeInteger(value) || value <= 0) {
+      validationMessage.value = 'Введите положительное целое число токенов.'
+      return undefined
+    }
+
+    body.maxOutputTokens = value
+  }
+
+  if (stopSequenceEnabled.value) {
+    if (!stopSequence.value.trim()) {
+      validationMessage.value = 'Введите stop sequence.'
+      return undefined
+    }
+
+    body.stopSequence = stopSequence.value
   }
 
   return {
-    body: {
-      maxOutputTokens: value,
-    },
+    body,
   }
 }
 
@@ -72,10 +100,11 @@ async function handleSubmit(event: Event): Promise<void> {
 
   const options = getRequestOptions()
 
-  if (maxOutputTokensEnabled.value && !options) {
+  if (!options) {
     return
   }
 
+  ensureRunId()
   input.value = ''
   await sendMessage({ text }, options)
 }
@@ -88,10 +117,11 @@ async function handleRegenerate(): Promise<void> {
 
   const options = getRequestOptions()
 
-  if (maxOutputTokensEnabled.value && !options) {
+  if (!options) {
     return
   }
 
+  ensureRunId()
   await regenerate(options)
 }
 
@@ -114,10 +144,15 @@ async function handleNewSession(): Promise<void> {
 
     // Начинает новый диалог с исходными настройками и пустым черновиком.
     messages.value = []
+    runId.value = null
     clearError()
     input.value = ''
     maxOutputTokensEnabled.value = false
     maxOutputTokens.value = 1000
+    stopSequenceEnabled.value = false
+    stopSequence.value = ''
+    reasoningEnabled.value = true
+    reasoningEffort.value = 'high'
     showRawFinishReason.value = false
     validationMessage.value = ''
     sidebarOpen.value = false
@@ -165,6 +200,10 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
         v-if="sidebarOpen"
         v-model:max-output-tokens-enabled="maxOutputTokensEnabled"
         v-model:max-output-tokens="maxOutputTokens"
+        v-model:stop-sequence-enabled="stopSequenceEnabled"
+        v-model:stop-sequence="stopSequence"
+        v-model:reasoning-enabled="reasoningEnabled"
+        v-model:reasoning-effort="reasoningEffort"
         v-model:show-raw-finish-reason="showRawFinishReason"
         :validation-message="validationMessage"
       />
