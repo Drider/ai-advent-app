@@ -1,32 +1,32 @@
-# LLM CLI
+# LLM Chat
 
-Простая интерактивная CLI-утилита для общения с языковой моделью через OpenAI-совместимый API.
+Minimal Nuxt chat for an OpenAI-compatible language model. Responses stream into the browser through the Vercel AI SDK.
 
-## Требования
+## Requirements
 
-- Node.js 22.18 или новее
+- Node.js 22.18 or newer
 - npm
 
-## Запуск
+## Configuration
 
-Установите зависимости:
+Create a .env file in the project root with these values:
 
-```bash
-npm install
-```
+    LLM_MODEL=deepseek/deepseek-v4.1-flash
+    LLM_BASE_URL=https://api.example.com/v1
+    LLM_API_KEY=your-api-key
 
-Создайте в корне проекта файл `.env` и укажите настройки API:
+The API key is read only by the server and is never exposed to the browser.
 
-```dotenv
-LLM_MODEL=provider/model
-LLM_BASE_URL=https://api.example.com/v1
-LLM_API_KEY=your-api-key
-```
+## Development
 
-Запустите CLI:
+Install dependencies with npm install.
 
-```bash
-npm start
-```
+Start the development server with npm run dev.
 
-Введите вопрос после приглашения `> `. Во время ожидания ответа отображается спиннер. Для выхода введите `/exit`. Проверить типы отдельно можно командой `npm run typecheck`.
+Open http://localhost:3000. The settings sidebar starts collapsed. Enable “Send settings” to provide a maximum response token limit.
+
+## Verification
+
+Run npm run typecheck and npm run build.
+
+Preview the production build with npm run preview.

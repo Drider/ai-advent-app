@@ -1,21 +1,30 @@
 {
   "name": "ai-app",
   "version": "1.0.0",
-  "description": "simple ai app",
+  "description": "Nuxt AI chat",
   "license": "MIT",
   "author": "",
   "type": "module",
-  "main": "index.ts",
   "scripts": {
-    "start": "npm run typecheck && node --env-file=.env index.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run"
   },
   "dependencies": {
-    "openai": "^7.47.0"
+    "@ai-sdk/openai": "4.0.108",
+    "@ai-sdk/vue": "4.0.162",
+    "@comark/nuxt": "0.8.1",
+    "@iconify-json/lucide": "1.2.151",
+    "@nuxt/ui": "4.12.0",
+    "ai": "7.0.162",
+    "nuxt": "4.6.4"
   },
   "devDependencies": {
-    "@types/node": "^22.20.5",
-    "typescript": "^5.9.3"
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0",
+    "vue-tsc": "3.3.14"
   }
 }

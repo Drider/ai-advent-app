@@ -1,0 +1,48 @@
+import type { ChatMessage, ChatRequestBody } from '../types/chat'
+
+// Проверяет тело запроса перед передачей истории и параметров в AI SDK.
+export function validateChatRequest(input: unknown): ChatRequestBody {
+  if (!input || typeof input !== 'object') {
+    throw new Error('Request body must be an object')
+  }
+
+  const body = input as Partial<ChatRequestBody>
+
+  if (!Array.isArray(body.messages)) {
+    throw new Error('messages must be an array')
+  }
+
+  if (!body.messages.every(isUIMessageLike)) {
+    throw new Error('messages must contain valid UIMessage entries')
+  }
+
+  if (
+    body.maxOutputTokens !== undefined
+    && (!Number.isSafeInteger(body.maxOutputTokens) || body.maxOutputTokens <= 0)
+  ) {
+    throw new Error('maxOutputTokens must be a positive integer')
+  }
+
+  return {
+    messages: body.messages as ChatMessage[],
+    ...(body.maxOutputTokens === undefined
+      ? {}
+      : { maxOutputTokens: body.maxOutputTokens }),
+  }
+}
+
+// Проверяет минимальную структуру UIMessage до передачи истории в AI SDK.
+function isUIMessageLike(message: unknown): boolean {
+  if (!message || typeof message !== 'object') {
+    return false
+  }
+
+  const candidate = message as Record<string, unknown>
+  const validRole = candidate.role === 'system'
+    || candidate.role === 'user'
+    || candidate.role === 'assistant'
+
+  return typeof candidate.id === 'string'
+    && validRole
+    && Array.isArray(candidate.parts)
+}
