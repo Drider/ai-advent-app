@@ -16,6 +16,8 @@ const maxOutputTokens = ref<number | null>(1000)
 const showRawFinishReason = shallowRef(false)
 const sidebarOpen = ref(false)
 const validationMessage = ref('')
+const sessionSaving = ref(false)
+const sessionError = ref('')
 
 const {
   messages,
@@ -24,6 +26,7 @@ const {
   sendMessage,
   stop,
   regenerate,
+  clearError,
 } = useChat<ChatMessage>({
   // В актуальной версии @ai-sdk/vue useChat предоставляет реактивное состояние
   // чата; устаревший класс Chat требует внутренний Vue-контекст и не вызывается
@@ -33,7 +36,7 @@ const {
   }),
 })
 
-const isPromptDisabled = computed(() => status.value === 'error')
+const isPromptDisabled = computed(() => status.value === 'error' || sessionSaving.value)
 const isBusy = computed(() => status.value === 'submitted' || status.value === 'streaming')
 
 // Передаёт лимит токенов только при включении соответствующей настройки.
@@ -79,6 +82,10 @@ async function handleSubmit(event: Event): Promise<void> {
 
 // Повторяет последний ответ с текущим состоянием настроек.
 async function handleRegenerate(): Promise<void> {
+  if (sessionSaving.value) {
+    return
+  }
+
   const options = getRequestOptions()
 
   if (maxOutputTokensEnabled.value && !options) {
@@ -86,6 +93,39 @@ async function handleRegenerate(): Promise<void> {
   }
 
   await regenerate(options)
+}
+
+// Сохраняет текущую переписку и сбрасывает контекст только после успешной записи.
+async function handleNewSession(): Promise<void> {
+  if (isBusy.value || sessionSaving.value) {
+    return
+  }
+
+  sessionError.value = ''
+  sessionSaving.value = true
+
+  try {
+    if (messages.value.length > 0) {
+      await $fetch('/api/sessions', {
+        method: 'POST',
+        body: { messages: messages.value },
+      })
+    }
+
+    // Начинает новый диалог с исходными настройками и пустым черновиком.
+    messages.value = []
+    clearError()
+    input.value = ''
+    maxOutputTokensEnabled.value = false
+    maxOutputTokens.value = 1000
+    showRawFinishReason.value = false
+    validationMessage.value = ''
+    sidebarOpen.value = false
+  } catch {
+    sessionError.value = 'Не удалось сохранить сессию. Диалог не изменён. Повторите попытку.'
+  } finally {
+    sessionSaving.value = false
+  }
 }
 
 // Показывает длительность и токенную статистику в компактном виде.
@@ -140,6 +180,16 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
           <UBadge color="neutral" variant="subtle">
             {{ status === 'streaming' ? 'Генерация' : status === 'submitted' ? 'Подключение' : 'Готово' }}
           </UBadge>
+          <UButton
+            color="neutral"
+            variant="soft"
+            size="sm"
+            icon="i-lucide-square-pen"
+            label="Новая сессия"
+            :loading="sessionSaving"
+            :disabled="isBusy || sessionSaving"
+            @click="handleNewSession"
+          />
           <UColorModeButton
             color="neutral"
             variant="ghost"
@@ -211,6 +261,10 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
         </UButton>
       </div>
 
+      <div v-if="sessionError" class="chat-error" role="alert">
+        {{ sessionError }}
+      </div>
+
       <UChatPrompt
         v-model="input"
         class="chat-prompt"
@@ -239,13 +293,16 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 <style scoped>
 .chat-shell {
   display: flex;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--ui-bg);
 }
 
 .settings-sidebar {
   width: 3.5rem;
   flex: 0 0 3.5rem;
+  height: 100%;
+  overflow-y: auto;
   border-right: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-bg-muted) 72%, transparent);
   transition: width 180ms ease, flex-basis 180ms ease;
@@ -281,14 +338,18 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 .chat-panel {
   display: flex;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   flex: 1;
   flex-direction: column;
+  overflow: hidden;
   padding: 0 1.25rem 1.25rem;
 }
 
 .chat-header {
   display: flex;
   min-height: 4.5rem;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -318,7 +379,11 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 
 .chat-messages {
   width: min(100%, 54rem);
+  min-height: 0;
+  flex: 1;
   margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1.5rem 0;
 }
 
@@ -357,6 +422,7 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 
 .chat-prompt {
   width: min(100%, 54rem);
+  flex-shrink: 0;
   margin: 0 auto;
 }
 
@@ -390,6 +456,15 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 
   .chat-header {
     min-height: 4rem;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+  }
+
+  .chat-header__actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .chat-error {
