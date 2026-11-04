@@ -7,12 +7,13 @@ import {
 import type { ChatRequestOptions } from 'ai'
 import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming } from '@nuxt/ui/utils/ai'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import type { ChatMessage } from '~/shared/types/chat'
 
 const input = ref('')
-const settingsEnabled = ref(false)
+const maxOutputTokensEnabled = shallowRef(false)
 const maxOutputTokens = ref<number | null>(1000)
+const showRawFinishReason = shallowRef(false)
 const sidebarOpen = ref(false)
 const validationMessage = ref('')
 
@@ -35,11 +36,11 @@ const {
 const isPromptDisabled = computed(() => status.value === 'error')
 const isBusy = computed(() => status.value === 'submitted' || status.value === 'streaming')
 
-// Создаёт параметры запроса только при включённой передаче настроек.
+// Передаёт лимит токенов только при включении соответствующей настройки.
 function getRequestOptions(): ChatRequestOptions | undefined {
   validationMessage.value = ''
 
-  if (!settingsEnabled.value) {
+  if (!maxOutputTokensEnabled.value) {
     return undefined
   }
 
@@ -68,7 +69,7 @@ async function handleSubmit(event: Event): Promise<void> {
 
   const options = getRequestOptions()
 
-  if (settingsEnabled.value && !options) {
+  if (maxOutputTokensEnabled.value && !options) {
     return
   }
 
@@ -80,7 +81,7 @@ async function handleSubmit(event: Event): Promise<void> {
 async function handleRegenerate(): Promise<void> {
   const options = getRequestOptions()
 
-  if (settingsEnabled.value && !options) {
+  if (maxOutputTokensEnabled.value && !options) {
     return
   }
 
@@ -120,51 +121,13 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
         />
       </div>
 
-      <div v-if="sidebarOpen" class="settings-sidebar__content">
-        <UCheckbox
-          v-model="settingsEnabled"
-          label="Передавать настройки"
-          color="primary"
-        />
-
-        <UFormField
-          class="settings-field"
-          label="Максимум токенов ответа"
-          description="По умолчанию запросы отправляются без параметров генерации."
-          :error="validationMessage || undefined"
-        >
-          <UInputNumber
-            v-model="maxOutputTokens"
-            :min="1"
-            :step="1"
-            :disabled="!settingsEnabled"
-            class="settings-number"
-          >
-            <template #decrement>
-              <UButton
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                square
-                icon="i-lucide-minus"
-                :disabled="!settingsEnabled"
-                aria-label="Уменьшить лимит токенов"
-              />
-            </template>
-            <template #increment>
-              <UButton
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                square
-                icon="i-lucide-plus"
-                :disabled="!settingsEnabled"
-                aria-label="Увеличить лимит токенов"
-              />
-            </template>
-          </UInputNumber>
-        </UFormField>
-      </div>
+      <ChatSettings
+        v-if="sidebarOpen"
+        v-model:max-output-tokens-enabled="maxOutputTokensEnabled"
+        v-model:max-output-tokens="maxOutputTokens"
+        v-model:show-raw-finish-reason="showRawFinishReason"
+        :validation-message="validationMessage"
+      />
     </aside>
 
     <section class="chat-panel">
@@ -228,6 +191,9 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
               <span>Выход: {{ formatMetric(message.metadata.usage?.outputTokens) }}</span>
               <span>Всего: {{ formatMetric(message.metadata.usage?.totalTokens) }}</span>
               <span>Время: {{ (message.metadata.durationMs / 1000).toFixed(1) }} с</span>
+              <span v-if="showRawFinishReason">
+                rawFinishReason: {{ message.metadata.rawFinishReason ?? '—' }}
+              </span>
             </div>
           </div>
         </template>
@@ -303,20 +269,6 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
   color: var(--ui-text-highlighted);
   font-size: 0.95rem;
   font-weight: 700;
-}
-
-.settings-sidebar__content {
-  display: grid;
-  gap: 1.25rem;
-  padding: 1.25rem;
-}
-
-.settings-field {
-  width: 100%;
-}
-
-.settings-number {
-  width: 100%;
 }
 
 .prompt-hint {

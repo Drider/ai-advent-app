@@ -23,7 +23,7 @@ Install dependencies with npm install.
 
 Start the development server with npm run dev.
 
-Open http://localhost:3000. The settings sidebar starts collapsed. Enable “Send settings” to provide a maximum response token limit.
+Open http://localhost:3000. The settings sidebar starts collapsed. Each setting has its own checkbox: enable “Maximum response tokens” to edit and send a token limit, or “Show rawFinishReason” to display the provider's completion reason beneath responses. The completion reason is stored with each response, so its visibility can be toggled for the whole conversation.
 
 ## Verification
 

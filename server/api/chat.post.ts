@@ -75,13 +75,14 @@ export default defineEventHandler(async (event) => {
     originalMessages: messages,
     sendReasoning: true,
     messageMetadata: ({ part }) => {
-      // Usage и время отправляем после завершения генерации ответа.
+      // Статистику и исходную причину завершения отправляем после генерации.
       if (part.type !== 'finish') {
         return undefined
       }
 
       return {
         durationMs: Date.now() - startedAt,
+        rawFinishReason: part.rawFinishReason,
         usage: {
           inputTokens: part.totalUsage.inputTokens,
           outputTokens: part.totalUsage.outputTokens,

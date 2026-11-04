@@ -11,6 +11,7 @@ export interface ChatUsage {
 export interface ChatMessageMetadata {
   usage?: ChatUsage
   durationMs?: number
+  rawFinishReason?: string
 }
 
 // Тип сообщения с метаданными, общими для клиента и сервера.
