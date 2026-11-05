@@ -11,7 +11,10 @@ const stopSequenceEnabled = defineModel<boolean>('stopSequenceEnabled', { requir
 const stopSequence = defineModel<string>('stopSequence', { required: true })
 const reasoningEnabled = defineModel<boolean>('reasoningEnabled', { required: true })
 const reasoningEffort = defineModel<ReasoningEffort>('reasoningEffort', { required: true })
+const responseSchemaEnabled = defineModel<boolean>('responseSchemaEnabled', { required: true })
+const responseSchema = defineModel<string>('responseSchema', { required: true })
 const showRawFinishReason = defineModel<boolean>('showRawFinishReason', { required: true })
+const preserveSettingsOnNewSession = defineModel<boolean>('preserveSettingsOnNewSession', { required: true })
 
 const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
   { label: 'Low', value: 'low' },
@@ -113,10 +116,40 @@ const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
       </UFormField>
     </div>
 
+    <div class="settings-option">
+      <UCheckbox
+        v-model="responseSchemaEnabled"
+        label="Структурированный ответ"
+        color="primary"
+      />
+
+      <UFormField
+        name="responseSchema"
+        description="Модель вернёт JSON по этой схеме. Корень — object, все поля — required."
+        :error="responseSchemaEnabled ? validationMessage || undefined : undefined"
+      >
+        <UTextarea
+          v-model="responseSchema"
+          :rows="12"
+          :disabled="!responseSchemaEnabled"
+          class="settings-textarea"
+          spellcheck="false"
+          aria-label="JSON Schema ответа"
+        />
+      </UFormField>
+    </div>
+
     <UCheckbox
       v-model="showRawFinishReason"
       label="Показывать rawFinishReason"
       description="Причина завершения под каждым ответом."
+      color="primary"
+    />
+
+    <UCheckbox
+      v-model="preserveSettingsOnNewSession"
+      label="Сохранять настройки при новой сессии"
+      description="Параметры останутся прежними, а сайдбар не свернётся после сброса."
       color="primary"
     />
   </div>
@@ -140,6 +173,13 @@ const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
 
 .settings-input {
   width: 100%;
+}
+
+.settings-textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
 .settings-select {

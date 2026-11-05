@@ -35,6 +35,19 @@ Start the development server with npm run dev.
 
 Open http://localhost:3000. The settings sidebar starts collapsed. Reasoning is enabled at `high` by default, matching DeepSeek V4.1 Flash; disable “Рассуждения модели” to send `reasoning: 'none'`, or choose `low`, `high`, or `max` while it is enabled. Other settings are independent: enable “Maximum response tokens” to edit and send a token limit, enable “Stop sequence” to stop generation at a specific sequence, or enable “Show rawFinishReason” to display the provider's completion reason beneath responses. The completion reason is stored with each response, so its visibility can be toggled for the whole conversation.
 
+Enable “Структурированный ответ” to send a strict JSON Schema through the OpenAI-compatible `response_format` API. The schema root must be an object, every declared property must be required, and objects must set `additionalProperties: false`. The default editor value is:
+
+    {
+      "type": "object",
+      "properties": {
+        "answer": { "type": "string" }
+      },
+      "required": ["answer"],
+      "additionalProperties": false
+    }
+
+The server validates the schema and limits it to 32 KB before sending the request to the model. The schema is included in detailed run logs.
+
 ## Verification
 
 Run npm run typecheck and npm run build.

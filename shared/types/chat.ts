@@ -1,4 +1,4 @@
-import type { UIMessage } from 'ai'
+import type { JSONSchema7, UIMessage } from 'ai'
 
 // Токенная статистика, которую провайдер может вернуть после генерации.
 export interface ChatUsage {
@@ -18,8 +18,29 @@ export interface ChatMessageMetadata {
 export type ReasoningEffort = 'low' | 'high' | 'max'
 export type ChatReasoning = 'none' | ReasoningEffort
 
+// Параметры интерфейса, которые могут переноситься в новую сессию.
+export interface ChatSettingsState {
+  maxOutputTokensEnabled: boolean
+  maxOutputTokens: number | null
+  stopSequenceEnabled: boolean
+  stopSequence: string
+  reasoningEnabled: boolean
+  reasoningEffort: ReasoningEffort
+  responseSchemaEnabled: boolean
+  responseSchema: string
+  showRawFinishReason: boolean
+  preserveSettingsOnNewSession: boolean
+}
+
 // Тип сообщения с метаданными, общими для клиента и сервера.
 export type ChatMessage = UIMessage<ChatMessageMetadata>
+
+// Схема Structured Output, передаваемая OpenAI-совместимому провайдеру.
+export interface ChatResponseSchema {
+  schema: JSONSchema7
+  name?: string
+  description?: string
+}
 
 // Тело запроса серверного маршрута.
 export interface ChatRequestBody {
@@ -28,4 +49,5 @@ export interface ChatRequestBody {
   maxOutputTokens?: number
   stopSequence?: string
   reasoning?: ChatReasoning
+  responseSchema?: ChatResponseSchema
 }

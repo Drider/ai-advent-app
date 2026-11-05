@@ -7,25 +7,33 @@ import {
 import type { ChatRequestOptions } from 'ai'
 import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming } from '@nuxt/ui/utils/ai'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import type {
   ChatMessage,
   ChatRequestBody,
-  ReasoningEffort,
+  ChatSettingsState,
 } from '~/shared/types/chat'
 import {
   buildChatRequestBody,
+  createDefaultChatSettings,
   formatAssistantMessage,
+  parseResponseSchemaText,
+  prepareNewSessionState,
 } from '~/shared/utils/chat'
 
+const defaultResponseSchema = `{
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string"
+    }
+  },
+  "required": ["answer"],
+  "additionalProperties": false
+}`
+
 const input = ref('')
-const maxOutputTokensEnabled = shallowRef(false)
-const maxOutputTokens = ref<number | null>(1000)
-const stopSequenceEnabled = shallowRef(false)
-const stopSequence = shallowRef('')
-const reasoningEnabled = shallowRef(true)
-const reasoningEffort = shallowRef<ReasoningEffort>('high')
-const showRawFinishReason = shallowRef(false)
+const chatSettings = reactive<ChatSettingsState>(createDefaultChatSettings(defaultResponseSchema))
 const sidebarOpen = ref(false)
 const validationMessage = ref('')
 const sessionSaving = ref(false)
@@ -63,12 +71,12 @@ const isBusy = computed(() => status.value === 'submitted' || status.value === '
 function getRequestOptions(): ChatRequestOptions | undefined {
   validationMessage.value = ''
 
-  const body: Pick<ChatRequestBody, 'maxOutputTokens' | 'stopSequence' | 'reasoning'> = {
-    reasoning: reasoningEnabled.value ? reasoningEffort.value : 'none',
+  const body: Pick<ChatRequestBody, 'maxOutputTokens' | 'stopSequence' | 'reasoning' | 'responseSchema'> = {
+    reasoning: chatSettings.reasoningEnabled ? chatSettings.reasoningEffort : 'none',
   }
 
-  if (maxOutputTokensEnabled.value) {
-    const value = Number(maxOutputTokens.value)
+  if (chatSettings.maxOutputTokensEnabled) {
+    const value = Number(chatSettings.maxOutputTokens)
 
     if (!Number.isSafeInteger(value) || value <= 0) {
       validationMessage.value = 'Введите положительное целое число токенов.'
@@ -78,13 +86,24 @@ function getRequestOptions(): ChatRequestOptions | undefined {
     body.maxOutputTokens = value
   }
 
-  if (stopSequenceEnabled.value) {
-    if (!stopSequence.value.trim()) {
+  if (chatSettings.stopSequenceEnabled) {
+    if (!chatSettings.stopSequence.trim()) {
       validationMessage.value = 'Введите stop sequence.'
       return undefined
     }
 
-    body.stopSequence = stopSequence.value
+    body.stopSequence = chatSettings.stopSequence
+  }
+
+  if (chatSettings.responseSchemaEnabled) {
+    try {
+      body.responseSchema = parseResponseSchemaText(chatSettings.responseSchema)
+    } catch (error) {
+      validationMessage.value = error instanceof Error
+        ? `Проверьте JSON Schema: ${error.message}`
+        : 'Проверьте JSON Schema.'
+      return undefined
+    }
   }
 
   return {
@@ -150,15 +169,14 @@ async function handleNewSession(): Promise<void> {
     runId.value = null
     clearError()
     input.value = ''
-    maxOutputTokensEnabled.value = false
-    maxOutputTokens.value = 1000
-    stopSequenceEnabled.value = false
-    stopSequence.value = ''
-    reasoningEnabled.value = true
-    reasoningEffort.value = 'high'
-    showRawFinishReason.value = false
+    const newSessionState = prepareNewSessionState(
+      chatSettings,
+      sidebarOpen.value,
+      defaultResponseSchema,
+    )
+    Object.assign(chatSettings, newSessionState.settings)
     validationMessage.value = ''
-    sidebarOpen.value = false
+    sidebarOpen.value = newSessionState.sidebarOpen
   } catch {
     sessionError.value = 'Не удалось сохранить сессию. Диалог не изменён. Повторите попытку.'
   } finally {
@@ -201,13 +219,16 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 
       <ChatSettings
         v-if="sidebarOpen"
-        v-model:max-output-tokens-enabled="maxOutputTokensEnabled"
-        v-model:max-output-tokens="maxOutputTokens"
-        v-model:stop-sequence-enabled="stopSequenceEnabled"
-        v-model:stop-sequence="stopSequence"
-        v-model:reasoning-enabled="reasoningEnabled"
-        v-model:reasoning-effort="reasoningEffort"
-        v-model:show-raw-finish-reason="showRawFinishReason"
+        v-model:max-output-tokens-enabled="chatSettings.maxOutputTokensEnabled"
+        v-model:max-output-tokens="chatSettings.maxOutputTokens"
+        v-model:stop-sequence-enabled="chatSettings.stopSequenceEnabled"
+        v-model:stop-sequence="chatSettings.stopSequence"
+        v-model:reasoning-enabled="chatSettings.reasoningEnabled"
+        v-model:reasoning-effort="chatSettings.reasoningEffort"
+        v-model:response-schema-enabled="chatSettings.responseSchemaEnabled"
+        v-model:response-schema="chatSettings.responseSchema"
+        v-model:show-raw-finish-reason="chatSettings.showRawFinishReason"
+        v-model:preserve-settings-on-new-session="chatSettings.preserveSettingsOnNewSession"
         :validation-message="validationMessage"
       />
     </aside>
@@ -216,7 +237,7 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
       <header class="chat-header">
         <div>
           <p class="chat-eyebrow">AI SDK · DeepSeek</p>
-          <h1>Чат с моделью</h1>
+          <h1>Чат с LLM</h1>
         </div>
         <div class="chat-header__actions">
           <UBadge color="neutral" variant="subtle">
@@ -283,7 +304,7 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
               <span>Выход: {{ formatMetric(message.metadata.usage?.outputTokens) }}</span>
               <span>Всего: {{ formatMetric(message.metadata.usage?.totalTokens) }}</span>
               <span>Время: {{ (message.metadata.durationMs / 1000).toFixed(1) }} с</span>
-              <span v-if="showRawFinishReason">
+              <span v-if="chatSettings.showRawFinishReason">
                 rawFinishReason: {{ message.metadata.rawFinishReason ?? '—' }}
               </span>
             </div>

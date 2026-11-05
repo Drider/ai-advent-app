@@ -9,6 +9,7 @@ import { createError, defineEventHandler, getRequestHeader, readBody } from 'h3'
 import type { ChatMessage, ChatRequestBody } from '../../shared/types/chat'
 import { validateChatRequest } from '../../shared/utils/chat'
 import { appendRunLogEntry, type RunLogLevel } from '../utils/run-logger'
+import { createResponseOutput } from '../utils/response-schema'
 
 function getRunLogLevel(value: unknown): RunLogLevel {
   return value === 'off' || value === 'detailed' || value === 'raw' ? value : 'basic'
@@ -78,6 +79,7 @@ export default defineEventHandler(async (event) => {
     maxOutputTokens,
     stopSequence,
     reasoning = 'high',
+    responseSchema,
   } = await readChatRequest(event)
 
   if (!config.llmApiKey || !config.llmBaseUrl || !config.llmModel) {
@@ -98,9 +100,11 @@ export default defineEventHandler(async (event) => {
   const logLevel = getRunLogLevel(config.llmLogLevel)
   const rawResponse: unknown[] = []
   const modelMessages = await convertToModelMessages(messages)
+  const responseOutput = createResponseOutput(responseSchema)
   const result = streamText({
     model: provider.chat(config.llmModel),
     messages: modelMessages,
+    ...(responseOutput === undefined ? {} : { output: responseOutput }),
     ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
     ...(stopSequence === undefined ? {} : { stopSequences: [stopSequence] }),
     reasoning,
@@ -131,6 +135,7 @@ export default defineEventHandler(async (event) => {
             ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
             ...(stopSequence === undefined ? {} : { stopSequences: [stopSequence] }),
             reasoning,
+            ...(responseSchema === undefined ? {} : { responseSchema }),
           },
           response: {
             finishReason: finish.finishReason,

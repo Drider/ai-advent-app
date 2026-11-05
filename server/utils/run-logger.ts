@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import type { ChatResponseSchema } from '../../shared/types/chat'
 
 export type RunLogLevel = 'off' | 'basic' | 'detailed' | 'raw'
 
@@ -24,6 +25,7 @@ export interface RunLogEntry {
     maxOutputTokens?: number
     stopSequences?: string[]
     reasoning?: 'none' | 'low' | 'high' | 'max'
+    responseSchema?: ChatResponseSchema
   }
   response?: {
     finishReason?: string
