@@ -1,5 +1,27 @@
 import type { ChatMessage, ChatRequestBody } from '../types/chat'
 
+// Оборачивает JSON-ответы в fenced-блок, потому что Markdown-рендерер иначе
+// воспринимает объект как служебную разметку и не создаёт видимых узлов.
+export function formatAssistantMessage(text: string): string {
+  const trimmed = text.trim()
+
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    return text
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(trimmed)
+
+    if (parsed === null || typeof parsed !== 'object') {
+      return text
+    }
+
+    return `\`\`\`json\n${JSON.stringify(parsed, null, 2)}\n\`\`\``
+  } catch {
+    return text
+  }
+}
+
 // Собирает тело запроса, сохраняя историю сообщений при добавлении настроек.
 export function buildChatRequestBody(
   body: Partial<Omit<ChatRequestBody, 'messages'>> | undefined,

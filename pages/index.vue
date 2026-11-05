@@ -13,7 +13,10 @@ import type {
   ChatRequestBody,
   ReasoningEffort,
 } from '~/shared/types/chat'
-import { buildChatRequestBody } from '~/shared/utils/chat'
+import {
+  buildChatRequestBody,
+  formatAssistantMessage,
+} from '~/shared/utils/chat'
 
 const input = ref('')
 const maxOutputTokensEnabled = shallowRef(false)
@@ -260,7 +263,7 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 
               <Markdown
                 v-else-if="isTextUIPart(part) && message.role === 'assistant'"
-                :value="part.text"
+                :value="formatAssistantMessage(part.text)"
               />
 
               <p

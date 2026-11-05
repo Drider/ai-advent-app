@@ -1,8 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildChatRequestBody,
+  formatAssistantMessage,
   validateChatRequest,
 } from '../shared/utils/chat'
+
+describe('formatAssistantMessage', () => {
+  it('wraps JSON object answers in a code block for the Markdown renderer', () => {
+    expect(formatAssistantMessage('{"quest_type":"спасение","urgency":"высокая"}')).toBe(
+      '```json\n{\n  "quest_type": "спасение",\n  "urgency": "высокая"\n}\n```',
+    )
+  })
+
+  it('keeps regular Markdown answers unchanged', () => {
+    expect(formatAssistantMessage('**Готово**')).toBe('**Готово**')
+  })
+})
 
 describe('buildChatRequestBody', () => {
   it('keeps messages when adding request options', () => {
