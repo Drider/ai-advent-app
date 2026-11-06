@@ -47,25 +47,49 @@ export function prepareNewSessionState(
   }
 }
 
+const CODE_FENCE_PATTERN = /(```[\s\S]*?```|~~~[\s\S]*?~~~)/g
+
+// Приводит LaTeX-делимитеры к синтаксису math-плагина Comark, не трогая кодовые блоки.
+function normalizeMathDelimiters(text: string): string {
+  const codeFences: string[] = []
+  const protectedText = text.replace(CODE_FENCE_PATTERN, (codeFence) => {
+    const placeholder = `@@chat-code-${codeFences.length}@@`
+    codeFences.push(codeFence)
+    return placeholder
+  })
+
+  const normalizedText = protectedText
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, content: string) => '$$' + content + '$$')
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, content: string) => {
+      // Comark принимает $...$ за валюту, если формула начинается с цифры.
+      return '$' + (/^\d/.test(content) ? `{${content}}` : content) + '$'
+    })
+
+  return normalizedText.replace(/@@chat-code-(\d+)@@/g, (_match, index: string) => {
+    return codeFences[Number(index)] ?? _match
+  })
+}
+
 // Оборачивает JSON-ответы в fenced-блок, потому что Markdown-рендерер иначе
 // воспринимает объект как служебную разметку и не создаёт видимых узлов.
 export function formatAssistantMessage(text: string): string {
-  const trimmed = text.trim()
+  const formattedText = normalizeMathDelimiters(text)
+  const trimmed = formattedText.trim()
 
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-    return text
+    return formattedText
   }
 
   try {
     const parsed: unknown = JSON.parse(trimmed)
 
     if (parsed === null || typeof parsed !== 'object') {
-      return text
+      return formattedText
     }
 
     return `\`\`\`json\n${JSON.stringify(parsed, null, 2)}\n\`\`\``
   } catch {
-    return text
+    return formattedText
   }
 }
 

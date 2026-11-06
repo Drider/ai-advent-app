@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { parseMarkdown } from '@comark/nuxt/parse'
+import math from '@comark/nuxt/plugins/math'
 import {
   buildChatRequestBody,
   prepareNewSessionState,
@@ -23,6 +25,37 @@ describe('formatAssistantMessage', () => {
     expect(formatAssistantMessage('{"quest_type":"спасение","urgency":"высокая"}')).toBe(
       '```json\n{\n  "quest_type": "спасение",\n  "urgency": "высокая"\n}\n```',
     )
+  })
+
+  it('converts LaTeX delimiters to the syntax supported by the Markdown math plugin', () => {
+    const answer = String.raw`Inline \(x^2\)
+
+\[
+\frac{1}{2}
+\]`
+
+    expect(formatAssistantMessage(answer)).toBe(`Inline $x^2$
+
+$$
+\\frac{1}{2}
+$$`)
+  })
+
+  it('renders adjacent digit formulas without absorbing the words between them', async () => {
+    const answer = String.raw`Последняя цифра — \(0\) или \(5\).`
+    const document = await parseMarkdown(formatAssistantMessage(answer), {
+      plugins: [math()],
+    })
+
+    expect(document.nodes).toEqual([[
+      'p',
+      {},
+      'Последняя цифра — ',
+      ['math', { class: 'math inline', content: '{0}' }, '{0}'],
+      ' или ',
+      ['math', { class: 'math inline', content: '{5}' }, '{5}'],
+      '.',
+    ]])
   })
 
   it('keeps regular Markdown answers unchanged', () => {

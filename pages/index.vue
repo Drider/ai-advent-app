@@ -4,6 +4,7 @@ import {
   isReasoningUIPart,
   isTextUIPart,
 } from 'ai'
+import math, { Math as MathRenderer } from '@comark/nuxt/plugins/math'
 import type { ChatRequestOptions } from 'ai'
 import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming } from '@nuxt/ui/utils/ai'
@@ -31,6 +32,9 @@ const defaultResponseSchema = `{
   "required": ["answer"],
   "additionalProperties": false
 }`
+
+const markdownComponents = { math: MathRenderer }
+const markdownPlugins = [math()]
 
 const input = ref('')
 const chatSettings = reactive<ChatSettingsState>(createDefaultChatSettings(defaultResponseSchema))
@@ -279,12 +283,18 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
                 :text="part.text"
                 :streaming="isStreamingPart(message, part)"
               >
-                <Markdown :value="part.text" />
+                <Markdown
+                  :value="formatAssistantMessage(part.text)"
+                  :components="markdownComponents"
+                  :plugins="markdownPlugins"
+                />
               </UChatReasoning>
 
               <Markdown
                 v-else-if="isTextUIPart(part) && message.role === 'assistant'"
                 :value="formatAssistantMessage(part.text)"
+                :components="markdownComponents"
+                :plugins="markdownPlugins"
               />
 
               <p
