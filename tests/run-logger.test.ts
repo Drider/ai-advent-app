@@ -28,7 +28,13 @@ function createEntry(level: RunLogEntry['level']): RunLogEntry {
     startedAt: '2026-11-04T12:00:01.000Z',
     completedAt: '2026-11-04T12:00:02.250Z',
     durationMs: 1250,
-    usage: { inputTokens: 10, outputTokens: 3, totalTokens: 13 },
+    usage: {
+      inputTokens: 10,
+      inputTokenDetails: { noCacheTokens: 8, cacheReadTokens: 2, cacheWriteTokens: 0 },
+      outputTokens: 3,
+      outputTokenDetails: { textTokens: 2, reasoningTokens: 1 },
+      totalTokens: 13,
+    },
     request: {
       model: 'test-model',
       messages: [{ role: 'user', content: 'Сколько будет два плюс два?' }],
@@ -60,7 +66,7 @@ describe('appendRunLogEntry', () => {
       requests: [{
         question: 'Сколько будет два плюс два?',
         answer: 'Четыре.',
-        usage: { inputTokens: 10, outputTokens: 3, totalTokens: 13 },
+        usage: createEntry('basic').usage,
         durationMs: 1250,
       }],
     })

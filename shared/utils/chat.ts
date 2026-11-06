@@ -24,6 +24,7 @@ export function createDefaultChatSettings(defaultResponseSchema: string): ChatSe
     reasoningEffort: 'high',
     responseSchemaEnabled: false,
     responseSchema: defaultResponseSchema,
+    showTokenBreakdown: false,
     showRawFinishReason: false,
     preserveSettingsOnNewSession: false,
   }

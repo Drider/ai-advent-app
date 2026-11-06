@@ -1,14 +1,10 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { ChatResponseSchema } from '../../shared/types/chat'
+import type { ChatResponseSchema, ChatUsage } from '../../shared/types/chat'
 
 export type RunLogLevel = 'off' | 'basic' | 'detailed' | 'raw'
 
-export interface RunLogUsage {
-  inputTokens: number | null
-  outputTokens: number | null
-  totalTokens: number | null
-}
+export type RunLogUsage = ChatUsage
 
 export interface RunLogEntry {
   runId: string

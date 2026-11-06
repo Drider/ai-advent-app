@@ -8,6 +8,8 @@ import type { H3Event } from 'h3'
 import { createError, defineEventHandler, getRequestHeader, readBody } from 'h3'
 import type { ChatMessage, ChatRequestBody } from '../../shared/types/chat'
 import { validateChatRequest } from '../../shared/utils/chat'
+import { toChatUsage } from '../utils/chat-usage'
+import { createPolzaReasoningFetch } from '../utils/polza-reasoning'
 import { appendRunLogEntry, type RunLogLevel } from '../utils/run-logger'
 import { createResponseOutput } from '../utils/response-schema'
 
@@ -93,6 +95,7 @@ export default defineEventHandler(async (event) => {
   const provider = createOpenAI({
     apiKey: config.llmApiKey,
     baseURL: config.llmBaseUrl,
+    fetch: createPolzaReasoningFetch(config.llmBaseUrl),
   })
   const startedAtMs = Date.now()
   const startedAt = new Date(startedAtMs).toISOString()
@@ -124,11 +127,7 @@ export default defineEventHandler(async (event) => {
           startedAt,
           completedAt: new Date().toISOString(),
           durationMs: Date.now() - startedAtMs,
-          usage: {
-            inputTokens: finish.totalUsage.inputTokens ?? null,
-            outputTokens: finish.totalUsage.outputTokens ?? null,
-            totalTokens: finish.totalUsage.totalTokens ?? null,
-          },
+          usage: toChatUsage(finish.totalUsage),
           request: {
             model: config.llmModel,
             messages: modelMessages as unknown[],
@@ -164,11 +163,7 @@ export default defineEventHandler(async (event) => {
       return {
         durationMs: Date.now() - startedAtMs,
         rawFinishReason: part.rawFinishReason,
-        usage: {
-          inputTokens: part.totalUsage.inputTokens,
-          outputTokens: part.totalUsage.outputTokens,
-          totalTokens: part.totalUsage.totalTokens,
-        },
+        usage: toChatUsage(part.totalUsage),
       }
     },
     onError: getStreamErrorMessage,

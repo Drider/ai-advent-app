@@ -106,6 +106,7 @@ describe('prepareNewSessionState', () => {
       reasoningEffort: 'low' as const,
       responseSchemaEnabled: true,
       responseSchema: '{"type":"object","additionalProperties":false}',
+      showTokenBreakdown: true,
       showRawFinishReason: true,
       preserveSettingsOnNewSession: true,
     }
@@ -126,6 +127,7 @@ describe('prepareNewSessionState', () => {
       reasoningEffort: 'low' as const,
       responseSchemaEnabled: true,
       responseSchema: '{"type":"object","additionalProperties":false}',
+      showTokenBreakdown: true,
       showRawFinishReason: true,
       preserveSettingsOnNewSession: false,
     }
@@ -140,6 +142,7 @@ describe('prepareNewSessionState', () => {
         reasoningEffort: 'high',
         responseSchemaEnabled: false,
         responseSchema: defaultResponseSchema,
+        showTokenBreakdown: false,
         showRawFinishReason: false,
         preserveSettingsOnNewSession: false,
       },

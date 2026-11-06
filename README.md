@@ -21,7 +21,7 @@ The API key is read only by the server and is never exposed to the browser.
 `LLM_LOG_LEVEL` controls JSON logs in `data/runs/`:
 
 - `off` disables run logging;
-- `basic` stores each question, answer, token usage, and request timing;
+- `basic` stores each question, answer, token usage (including available input, cache, text, and reasoning categories), and request timing;
 - `detailed` also stores the model request context and response metadata;
 - `raw` additionally stores every raw provider chunk returned by the LLM API.
 
@@ -33,7 +33,7 @@ Install dependencies with npm install.
 
 Start the development server with npm run dev.
 
-Open http://localhost:3000. The settings sidebar starts collapsed. Reasoning is enabled at `high` by default, matching DeepSeek V4.1 Flash; disable “Рассуждения модели” to send `reasoning: 'none'`, or choose `low`, `high`, or `max` while it is enabled. Other settings are independent: enable “Maximum response tokens” to edit and send a token limit, enable “Stop sequence” to stop generation at a specific sequence, or enable “Show rawFinishReason” to display the provider's completion reason beneath responses. The completion reason is stored with each response, so its visibility can be toggled for the whole conversation.
+Open http://localhost:3000. The settings sidebar starts collapsed. Reasoning is enabled at `high` by default, matching DeepSeek V4.1 Flash; disable “Рассуждения модели” to send `none`, or choose `low`, `high`, or `max` while it is enabled. For Polza, the server sends the provider-specific `reasoning.effort` field in addition to the OpenAI-compatible setting. The selected model must support reasoning for the setting to have an effect. Other settings are independent: enable “Maximum response tokens” to edit and send a token limit, enable “Stop sequence” to stop generation at a specific sequence, enable “Показывать разбивку токенов” to display the available token categories below responses, or enable “Show rawFinishReason” to display the provider's completion reason. Missing token categories appear as `—`. These display settings can be toggled for the whole conversation.
 
 Enable “Структурированный ответ” to send a strict JSON Schema through the OpenAI-compatible `response_format` API. The schema root must be an object, every declared property must be required, and objects must set `additionalProperties: false`. The default editor value is:
 

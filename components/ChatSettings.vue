@@ -13,6 +13,7 @@ const reasoningEnabled = defineModel<boolean>('reasoningEnabled', { required: tr
 const reasoningEffort = defineModel<ReasoningEffort>('reasoningEffort', { required: true })
 const responseSchemaEnabled = defineModel<boolean>('responseSchemaEnabled', { required: true })
 const responseSchema = defineModel<string>('responseSchema', { required: true })
+const showTokenBreakdown = defineModel<boolean>('showTokenBreakdown', { required: true })
 const showRawFinishReason = defineModel<boolean>('showRawFinishReason', { required: true })
 const preserveSettingsOnNewSession = defineModel<boolean>('preserveSettingsOnNewSession', { required: true })
 
@@ -34,7 +35,7 @@ const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
 
       <UFormField
         name="reasoningEffort"
-        description="Уровень рассуждений DeepSeek: low, high или max."
+        description="Уровень рассуждений: low, high или max. Работает, если модель поддерживает эту настройку."
       >
         <USelect
           v-model="reasoningEffort"
@@ -138,6 +139,13 @@ const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
         />
       </UFormField>
     </div>
+
+    <UCheckbox
+      v-model="showTokenBreakdown"
+      label="Показывать разбивку токенов"
+      description="Вход, кэш, текст ответа и рассуждения под каждым ответом."
+      color="primary"
+    />
 
     <UCheckbox
       v-model="showRawFinishReason"

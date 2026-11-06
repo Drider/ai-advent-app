@@ -2,9 +2,18 @@ import type { JSONSchema7, UIMessage } from 'ai'
 
 // Токенная статистика, которую провайдер может вернуть после генерации.
 export interface ChatUsage {
-  inputTokens?: number
-  outputTokens?: number
-  totalTokens?: number
+  inputTokens: number | null
+  inputTokenDetails?: {
+    noCacheTokens: number | null
+    cacheReadTokens: number | null
+    cacheWriteTokens: number | null
+  }
+  outputTokens: number | null
+  outputTokenDetails?: {
+    textTokens: number | null
+    reasoningTokens: number | null
+  }
+  totalTokens: number | null
 }
 
 // Метаданные сообщения ассистента для отображения статистики запроса.
@@ -28,6 +37,7 @@ export interface ChatSettingsState {
   reasoningEffort: ReasoningEffort
   responseSchemaEnabled: boolean
   responseSchema: string
+  showTokenBreakdown: boolean
   showRawFinishReason: boolean
   preserveSettingsOnNewSession: boolean
 }

@@ -189,7 +189,7 @@ async function handleNewSession(): Promise<void> {
 }
 
 // Показывает длительность и токенную статистику в компактном виде.
-function formatMetric(value: number | undefined): string {
+function formatMetric(value: number | null | undefined): string {
   return typeof value === 'number' ? value.toLocaleString('ru-RU') : '—'
 }
 
@@ -231,6 +231,7 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
         v-model:reasoning-effort="chatSettings.reasoningEffort"
         v-model:response-schema-enabled="chatSettings.responseSchemaEnabled"
         v-model:response-schema="chatSettings.responseSchema"
+        v-model:show-token-breakdown="chatSettings.showTokenBreakdown"
         v-model:show-raw-finish-reason="chatSettings.showRawFinishReason"
         v-model:preserve-settings-on-new-session="chatSettings.preserveSettingsOnNewSession"
         :validation-message="validationMessage"
@@ -314,6 +315,13 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
               <span>Выход: {{ formatMetric(message.metadata.usage?.outputTokens) }}</span>
               <span>Всего: {{ formatMetric(message.metadata.usage?.totalTokens) }}</span>
               <span>Время: {{ (message.metadata.durationMs / 1000).toFixed(1) }} с</span>
+              <div v-if="chatSettings.showTokenBreakdown" class="message-metrics__breakdown">
+                <span>Вход без кэша: {{ formatMetric(message.metadata.usage?.inputTokenDetails?.noCacheTokens) }}</span>
+                <span>Чтение кэша: {{ formatMetric(message.metadata.usage?.inputTokenDetails?.cacheReadTokens) }}</span>
+                <span>Запись кэша: {{ formatMetric(message.metadata.usage?.inputTokenDetails?.cacheWriteTokens) }}</span>
+                <span>Текст ответа: {{ formatMetric(message.metadata.usage?.outputTokenDetails?.textTokens) }}</span>
+                <span>Рассуждения: {{ formatMetric(message.metadata.usage?.outputTokenDetails?.reasoningTokens) }}</span>
+              </div>
               <span v-if="chatSettings.showRawFinishReason">
                 rawFinishReason: {{ message.metadata.rawFinishReason ?? '—' }}
               </span>
@@ -476,6 +484,13 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
   gap: 0.75rem;
   color: var(--ui-text-muted);
   font-size: 0.7rem;
+}
+
+.message-metrics__breakdown {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .chat-error {
