@@ -3,6 +3,7 @@ import { parseMarkdown } from '@comark/nuxt/parse'
 import math from '@comark/nuxt/plugins/math'
 import {
   buildChatRequestBody,
+  createDefaultChatSettings,
   prepareNewSessionState,
   formatAssistantMessage,
   parseResponseSchemaText,
@@ -71,8 +72,9 @@ describe('buildChatRequestBody', () => {
       parts: [{ type: 'text' as const, text: 'Hello' }],
     }]
 
-    expect(buildChatRequestBody({ maxOutputTokens: 1000 }, messages, 'run-1')).toEqual({
+    expect(buildChatRequestBody({ model: 'qwen/qwen3.5-9b', maxOutputTokens: 1000 }, messages, 'run-1')).toEqual({
       messages,
+      model: 'qwen/qwen3.5-9b',
       maxOutputTokens: 1000,
       runId: 'run-1',
     })
@@ -96,8 +98,14 @@ describe('buildChatRequestBody', () => {
 describe('prepareNewSessionState', () => {
   const defaultResponseSchema = '{"type":"object"}'
 
+  it('uses the configured default model when settings are created', () => {
+    expect(createDefaultChatSettings(defaultResponseSchema, 'sber/gigachat').modelId).toBe('sber/gigachat')
+    expect(createDefaultChatSettings(defaultResponseSchema).modelId).toBe('deepseek/deepseek-v4.1-flash')
+  })
+
   it('keeps settings and the sidebar open when preservation is enabled', () => {
     const currentSettings = {
+      modelId: 'qwen/qwen3.5-9b',
       maxOutputTokensEnabled: true,
       maxOutputTokens: 2400,
       stopSequenceEnabled: true,
@@ -111,7 +119,7 @@ describe('prepareNewSessionState', () => {
       preserveSettingsOnNewSession: true,
     }
 
-    expect(prepareNewSessionState(currentSettings, true, defaultResponseSchema)).toEqual({
+    expect(prepareNewSessionState(currentSettings, true, defaultResponseSchema, 'sber/gigachat')).toEqual({
       settings: currentSettings,
       sidebarOpen: true,
     })
@@ -119,6 +127,7 @@ describe('prepareNewSessionState', () => {
 
   it('resets settings and collapses the sidebar when preservation is disabled', () => {
     const currentSettings = {
+      modelId: 'qwen/qwen3.5-9b',
       maxOutputTokensEnabled: true,
       maxOutputTokens: 2400,
       stopSequenceEnabled: true,
@@ -132,8 +141,9 @@ describe('prepareNewSessionState', () => {
       preserveSettingsOnNewSession: false,
     }
 
-    expect(prepareNewSessionState(currentSettings, true, defaultResponseSchema)).toEqual({
+    expect(prepareNewSessionState(currentSettings, true, defaultResponseSchema, 'sber/gigachat')).toEqual({
       settings: {
+        modelId: 'sber/gigachat',
         maxOutputTokensEnabled: false,
         maxOutputTokens: 1000,
         stopSequenceEnabled: false,
@@ -154,6 +164,19 @@ describe('prepareNewSessionState', () => {
 describe('validateChatRequest', () => {
   it('accepts messages without optional settings', () => {
     expect(validateChatRequest({ messages: [] })).toEqual({ messages: [] })
+  })
+
+  it('accepts and normalizes a model ID from the request', () => {
+    expect(validateChatRequest({ messages: [], model: ' qwen/qwen3.5-9b ' })).toEqual({
+      messages: [],
+      model: 'qwen/qwen3.5-9b',
+    })
+  })
+
+  it.each(['', '   ', 'invalid model', 'x'.repeat(201)])('rejects an invalid model ID', (model) => {
+    expect(() => validateChatRequest({ messages: [], model })).toThrow(
+      'model must be a non-empty ID without spaces (max 200 characters)',
+    )
   })
 
   it('accepts a positive integer token limit', () => {

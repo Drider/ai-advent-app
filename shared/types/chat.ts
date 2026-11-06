@@ -29,6 +29,7 @@ export type ChatReasoning = 'none' | ReasoningEffort
 
 // Параметры интерфейса, которые могут переноситься в новую сессию.
 export interface ChatSettingsState {
+  modelId: string
   maxOutputTokensEnabled: boolean
   maxOutputTokens: number | null
   stopSequenceEnabled: boolean
@@ -55,6 +56,7 @@ export interface ChatResponseSchema {
 // Тело запроса серверного маршрута.
 export interface ChatRequestBody {
   messages: ChatMessage[]
+  model?: string
   runId?: string
   maxOutputTokens?: number
   stopSequence?: string

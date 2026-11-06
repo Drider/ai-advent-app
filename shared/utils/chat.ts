@@ -8,14 +8,21 @@ import type {
 const RESPONSE_SCHEMA_MAX_BYTES = 32 * 1024
 const RESPONSE_SCHEMA_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
 const RESPONSE_SCHEMA_MAX_DESCRIPTION_LENGTH = 2_000
+const MODEL_ID_MAX_LENGTH = 200
+
+export const DEFAULT_CHAT_MODEL = 'deepseek/deepseek-v4.1-flash'
 
 export interface NewSessionState {
   settings: ChatSettingsState
   sidebarOpen: boolean
 }
 
-export function createDefaultChatSettings(defaultResponseSchema: string): ChatSettingsState {
+export function createDefaultChatSettings(
+  defaultResponseSchema: string,
+  defaultModel = DEFAULT_CHAT_MODEL,
+): ChatSettingsState {
   return {
+    modelId: defaultModel,
     maxOutputTokensEnabled: false,
     maxOutputTokens: 1000,
     stopSequenceEnabled: false,
@@ -30,10 +37,25 @@ export function createDefaultChatSettings(defaultResponseSchema: string): ChatSe
   }
 }
 
+// Нормализует ID модели, который вводится в интерфейсе или приходит через API.
+export function validateModelId(input: unknown): string {
+  if (typeof input !== 'string') {
+    throw new Error('model must be a non-empty ID without spaces (max 200 characters)')
+  }
+
+  const model = input.trim()
+  if (!model || model.length > MODEL_ID_MAX_LENGTH || /\s/u.test(model)) {
+    throw new Error('model must be a non-empty ID without spaces (max 200 characters)')
+  }
+
+  return model
+}
+
 export function prepareNewSessionState(
   currentSettings: ChatSettingsState,
   sidebarOpen: boolean,
   defaultResponseSchema: string,
+  defaultModel = DEFAULT_CHAT_MODEL,
 ): NewSessionState {
   if (currentSettings.preserveSettingsOnNewSession) {
     return {
@@ -43,7 +65,7 @@ export function prepareNewSessionState(
   }
 
   return {
-    settings: createDefaultChatSettings(defaultResponseSchema),
+    settings: createDefaultChatSettings(defaultResponseSchema, defaultModel),
     sidebarOpen: false,
   }
 }
@@ -189,6 +211,8 @@ export function validateChatRequest(input: unknown): ChatRequestBody {
     throw new Error('messages must contain valid UIMessage entries')
   }
 
+  const model = body.model === undefined ? undefined : validateModelId(body.model)
+
   if (
     body.runId !== undefined
     && (typeof body.runId !== 'string' || body.runId.trim().length === 0)
@@ -226,6 +250,7 @@ export function validateChatRequest(input: unknown): ChatRequestBody {
 
   return {
     messages: body.messages as ChatMessage[],
+    ...(model === undefined ? {} : { model }),
     ...(body.runId === undefined ? {} : { runId: body.runId }),
     ...(body.maxOutputTokens === undefined
       ? {}

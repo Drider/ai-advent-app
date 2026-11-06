@@ -1,3 +1,7 @@
+import { DEFAULT_CHAT_MODEL, validateModelId } from './shared/utils/chat'
+
+const configuredDefaultModel = process.env.LLM_MODEL_DEFAULT?.trim()
+
 // Настройки Nuxt и приватных параметров подключения к модели.
 export default defineNuxtConfig({
   srcDir: '.',
@@ -8,8 +12,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     llmApiKey: process.env.LLM_API_KEY ?? '',
     llmBaseUrl: process.env.LLM_BASE_URL ?? '',
-    llmModel: process.env.LLM_MODEL ?? '',
     llmLogLevel: process.env.LLM_LOG_LEVEL ?? 'basic',
+    public: {
+      chatDefaultModel: configuredDefaultModel
+        ? validateModelId(configuredDefaultModel)
+        : DEFAULT_CHAT_MODEL,
+    },
   },
   typescript: {
     strict: true,

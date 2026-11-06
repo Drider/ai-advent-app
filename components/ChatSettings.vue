@@ -3,8 +3,10 @@ import type { ReasoningEffort } from '~/shared/types/chat'
 
 defineProps<{
   validationMessage: string
+  modelValidationMessage: string
 }>()
 
+const modelId = defineModel<string>('modelId', { required: true })
 const maxOutputTokensEnabled = defineModel<boolean>('maxOutputTokensEnabled', { required: true })
 const maxOutputTokens = defineModel<number | null>('maxOutputTokens', { required: true })
 const stopSequenceEnabled = defineModel<boolean>('stopSequenceEnabled', { required: true })
@@ -26,6 +28,36 @@ const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
 
 <template>
   <div class="chat-settings">
+    <UFormField
+      name="modelId"
+      label="Модель"
+      description="ID модели для следующего запроса."
+      :error="modelValidationMessage || undefined"
+    >
+      <div class="settings-model">
+        <UInput
+          v-model="modelId"
+          class="settings-input"
+          placeholder="deepseek/deepseek-v4.1-flash"
+          aria-label="ID модели"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <UButton
+          to="https://polza.ai/dashboard/models"
+          target="_blank"
+          rel="noopener noreferrer"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          square
+          icon="i-lucide-external-link"
+          aria-label="Открыть список моделей Polza"
+          title="Список моделей Polza"
+        />
+      </div>
+    </UFormField>
+
     <div class="settings-option">
       <UCheckbox
         v-model="reasoningEnabled"
@@ -181,6 +213,17 @@ const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
 
 .settings-input {
   width: 100%;
+}
+
+.settings-model {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-model .settings-input {
+  min-width: 0;
+  flex: 1;
 }
 
 .settings-textarea {

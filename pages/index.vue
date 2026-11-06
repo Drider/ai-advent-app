@@ -20,6 +20,7 @@ import {
   formatAssistantMessage,
   parseResponseSchemaText,
   prepareNewSessionState,
+  validateModelId,
 } from '~/shared/utils/chat'
 
 const defaultResponseSchema = `{
@@ -35,11 +36,13 @@ const defaultResponseSchema = `{
 
 const markdownComponents = { math: MathRenderer }
 const markdownPlugins = [math()]
+const defaultModel = useRuntimeConfig().public.chatDefaultModel
 
 const input = ref('')
-const chatSettings = reactive<ChatSettingsState>(createDefaultChatSettings(defaultResponseSchema))
+const chatSettings = reactive<ChatSettingsState>(createDefaultChatSettings(defaultResponseSchema, defaultModel))
 const sidebarOpen = ref(false)
 const validationMessage = ref('')
+const modelValidationMessage = ref('')
 const sessionSaving = ref(false)
 const sessionError = ref('')
 const runId = ref<string | null>(null)
@@ -74,8 +77,19 @@ const isBusy = computed(() => status.value === 'submitted' || status.value === '
 // Передаёт только включённые ограничения генерации.
 function getRequestOptions(): ChatRequestOptions | undefined {
   validationMessage.value = ''
+  modelValidationMessage.value = ''
 
-  const body: Pick<ChatRequestBody, 'maxOutputTokens' | 'stopSequence' | 'reasoning' | 'responseSchema'> = {
+  let model: string
+  try {
+    model = validateModelId(chatSettings.modelId)
+  } catch {
+    modelValidationMessage.value = 'Укажите ID модели без пробелов (до 200 символов).'
+    sidebarOpen.value = true
+    return undefined
+  }
+
+  const body: Pick<ChatRequestBody, 'model' | 'maxOutputTokens' | 'stopSequence' | 'reasoning' | 'responseSchema'> = {
+    model,
     reasoning: chatSettings.reasoningEnabled ? chatSettings.reasoningEffort : 'none',
   }
 
@@ -177,9 +191,11 @@ async function handleNewSession(): Promise<void> {
       chatSettings,
       sidebarOpen.value,
       defaultResponseSchema,
+      defaultModel,
     )
     Object.assign(chatSettings, newSessionState.settings)
     validationMessage.value = ''
+    modelValidationMessage.value = ''
     sidebarOpen.value = newSessionState.sidebarOpen
   } catch {
     sessionError.value = 'Не удалось сохранить сессию. Диалог не изменён. Повторите попытку.'
@@ -223,6 +239,7 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 
       <ChatSettings
         v-if="sidebarOpen"
+        v-model:model-id="chatSettings.modelId"
         v-model:max-output-tokens-enabled="chatSettings.maxOutputTokensEnabled"
         v-model:max-output-tokens="chatSettings.maxOutputTokens"
         v-model:stop-sequence-enabled="chatSettings.stopSequenceEnabled"
@@ -235,13 +252,14 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
         v-model:show-raw-finish-reason="chatSettings.showRawFinishReason"
         v-model:preserve-settings-on-new-session="chatSettings.preserveSettingsOnNewSession"
         :validation-message="validationMessage"
+        :model-validation-message="modelValidationMessage"
       />
     </aside>
 
     <section class="chat-panel">
       <header class="chat-header">
         <div>
-          <p class="chat-eyebrow">AI SDK · DeepSeek</p>
+          <p class="chat-eyebrow" :title="chatSettings.modelId">AI SDK · {{ chatSettings.modelId.trim() || 'Модель не выбрана' }}</p>
           <h1>Чат с LLM</h1>
         </div>
         <div class="chat-header__actions">
@@ -455,7 +473,10 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
   color: var(--ui-text-muted);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
+  max-width: min(60vw, 28rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-messages {

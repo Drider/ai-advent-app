@@ -7,7 +7,7 @@ import {
 import type { H3Event } from 'h3'
 import { createError, defineEventHandler, getRequestHeader, readBody } from 'h3'
 import type { ChatMessage, ChatRequestBody } from '../../shared/types/chat'
-import { validateChatRequest } from '../../shared/utils/chat'
+import { DEFAULT_CHAT_MODEL, validateChatRequest } from '../../shared/utils/chat'
 import { toChatUsage } from '../utils/chat-usage'
 import { createPolzaReasoningFetch } from '../utils/polza-reasoning'
 import { appendRunLogEntry, type RunLogLevel } from '../utils/run-logger'
@@ -77,14 +77,16 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
   const {
     messages,
+    model: requestedModel,
     runId: requestRunId,
     maxOutputTokens,
     stopSequence,
     reasoning = 'high',
     responseSchema,
   } = await readChatRequest(event)
+  const model = requestedModel ?? config.public.chatDefaultModel ?? DEFAULT_CHAT_MODEL
 
-  if (!config.llmApiKey || !config.llmBaseUrl || !config.llmModel) {
+  if (!config.llmApiKey || !config.llmBaseUrl) {
     throw createError({
       statusCode: 500,
       statusMessage: 'LLM server configuration is incomplete.',
@@ -105,7 +107,7 @@ export default defineEventHandler(async (event) => {
   const modelMessages = await convertToModelMessages(messages)
   const responseOutput = createResponseOutput(responseSchema)
   const result = streamText({
-    model: provider.chat(config.llmModel),
+    model: provider.chat(model),
     messages: modelMessages,
     ...(responseOutput === undefined ? {} : { output: responseOutput }),
     ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
@@ -129,7 +131,7 @@ export default defineEventHandler(async (event) => {
           durationMs: Date.now() - startedAtMs,
           usage: toChatUsage(finish.totalUsage),
           request: {
-            model: config.llmModel,
+            model,
             messages: modelMessages as unknown[],
             ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
             ...(stopSequence === undefined ? {} : { stopSequences: [stopSequence] }),
