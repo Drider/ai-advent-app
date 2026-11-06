@@ -24,7 +24,7 @@ export interface ChatMessageMetadata {
 }
 
 // Доступные режимы рассуждений для DeepSeek V4.1 Flash через Polza.
-export type ReasoningEffort = 'low' | 'high' | 'max'
+export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 export type ChatReasoning = 'none' | ReasoningEffort
 
 // Параметры интерфейса, которые могут переноситься в новую сессию.

@@ -24,7 +24,8 @@ export function createPolzaReasoningFetch(
     }
 
     const effort = body.reasoning_effort
-    if (effort !== 'none' && effort !== 'low' && effort !== 'high' && effort !== 'max') {
+    const validEfforts = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
+    if (typeof effort !== 'string' || !validEfforts.has(effort)) {
       return fetchImpl(input, init)
     }
 

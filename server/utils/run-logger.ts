@@ -20,7 +20,7 @@ export interface RunLogEntry {
     messages: unknown[]
     maxOutputTokens?: number
     stopSequences?: string[]
-    reasoning?: 'none' | 'low' | 'high' | 'max'
+    reasoning?: 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
     responseSchema?: ChatResponseSchema
   }
   response?: {

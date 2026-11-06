@@ -234,14 +234,9 @@ export function validateChatRequest(input: unknown): ChatRequestBody {
     throw new Error('stopSequence must be a non-empty string')
   }
 
-  if (
-    body.reasoning !== undefined
-    && body.reasoning !== 'none'
-    && body.reasoning !== 'low'
-    && body.reasoning !== 'high'
-    && body.reasoning !== 'max'
-  ) {
-    throw new Error('reasoning must be one of none, low, high, max')
+  const validReasoning = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
+  if (body.reasoning !== undefined && !validReasoning.has(body.reasoning)) {
+    throw new Error('reasoning must be one of none, minimal, low, medium, high, xhigh, max')
   }
 
   const responseSchema = body.responseSchema === undefined

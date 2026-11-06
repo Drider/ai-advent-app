@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createPolzaReasoningFetch } from '../server/utils/polza-reasoning'
 
 describe('createPolzaReasoningFetch', () => {
-  it.each(['none', 'low', 'high', 'max'])('sends Polza reasoning.effort=%s', async (effort) => {
+  it.each(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])('sends Polza reasoning.effort=%s', async (effort) => {
     let sentBody: unknown
     const fakeFetch: typeof fetch = async (_input, init) => {
       sentBody = JSON.parse(String(init?.body))
