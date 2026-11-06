@@ -276,6 +276,13 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
             :disabled="isBusy || sessionSaving"
             @click="handleNewSession"
           />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            to="/benchmark"
+            label="Бенчмарк"
+          />
           <UColorModeButton
             color="neutral"
             variant="ghost"
