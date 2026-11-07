@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PROMPT_VERSION } from './prompts'
 import type { BenchmarkCell, BenchmarkConfig, BenchmarkGrade, MetaLine } from './types'
@@ -80,7 +80,6 @@ export function readRun(runId: string): RunData | null {
 
 export function listRunIds(): string[] {
   if (!existsSync(RUNS_DIR)) return []
-  const { readdirSync } = require('node:fs') as typeof import('node:fs')
   return readdirSync(RUNS_DIR)
     .filter((f: string) => f.endsWith('.jsonl'))
     .map((f: string) => f.slice(0, -6))

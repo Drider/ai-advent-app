@@ -120,13 +120,17 @@ onUnmounted(stopListening)
   <div class="max-w-5xl mx-auto p-4 space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-semibold">Бенчмарк</h1>
-      <UButton variant="ghost" size="sm" to="/">← Чат</UButton>
+      <div class="flex items-center gap-2">
+        <UButton variant="ghost" size="sm" icon="i-lucide-file-text" to="/benchmark/reports">Отчёты</UButton>
+        <UButton variant="ghost" size="sm" to="/">← Чат</UButton>
+      </div>
     </div>
 
     <UTabs
+      v-model="tab"
       :items="[
-        { label: 'Новый прогон', slot: 'new' },
-        { label: `Прогоны (${runs.length})`, slot: 'runs' },
+        { label: 'Новый прогон', slot: 'new', value: 'new' },
+        { label: `Прогоны (${runs.length})`, slot: 'runs', value: 'runs' },
       ]"
     >
       <template #new>

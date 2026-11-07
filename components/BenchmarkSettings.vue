@@ -24,8 +24,8 @@ const emit = defineEmits<{
   }]
 }>()
 
-const model = ref('deepseek/deepseek-v4.1-flash')
-const judgeModel = ref('deepseek/deepseek-v4.1-flash')
+const model = ref('upstage/solar-mini4')
+const judgeModel = ref('upstage/solar-mini4')
 const selectedEfforts = ref<string[]>(['none', 'max'])
 const selectedTaskIds = ref<string[]>([...ALL_TASK_IDS])
 const selectedMethods = ref<string[]>([...ALL_METHODS])
