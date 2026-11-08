@@ -1,73 +1,107 @@
-# LLM Chat
+# LLM Chat — лаборатория для экспериментов с моделями
 
-Minimal Nuxt chat for an OpenAI-compatible language model. Responses stream into the browser through the Vercel AI SDK.
+Веб-приложение для общения с языковыми моделями и проверки того, как настройки генерации влияют на ответы. Здесь можно вести диалог с моделью через OpenAI-совместимый API, сравнивать режимы рассуждения и способы промптинга, запускать повторяемые эксперименты с температурой и читать отчёты по результатам.
 
-## Requirements
+Проект подходит для изучения поведения LLM на конкретных задачах: он показывает не только ответ, но и время выполнения, расход токенов и результаты серийных прогонов. Для работы нужен ключ от провайдера с OpenAI-совместимым Chat Completions API; приложение также учитывает особенности параметра рассуждений у Polza.
 
-- Node.js 22.18 or newer
-- npm
+## Возможности
 
-## Configuration
+- **Чат:** потоковые ответы, отображение Markdown и формул, повтор ответа и сохранение диалога при создании новой сессии.
+- **Настройки запроса:** выбор модели, уровня рассуждения, температуры, лимита токенов и стоп-последовательности. Можно запросить структурированный ответ по JSON Schema и включить подробную статистику токенов.
+- **Бенчмарк рассуждений:** сравнение уровней рассуждения и четырёх способов промптинга на задачах с проверяемыми ответами. Интерфейс показывает ход прогона и сводные результаты.
+- **Бенчмарк температуры:** сравнение значений `0`, `0.7` и `1.2` на точной и творческой задачах. Каждый сценарий повторяется пять раз, всего 30 запросов за прогон.
+- **Отчёты:** отдельная страница с выводами из экспериментов, которые хранятся в репозитории как Markdown-файлы.
 
-Create a .env file in the project root with these values:
+## Стек
 
-    LLM_BASE_URL=https://api.example.com/v1
-    LLM_API_KEY=your-api-key
-    LLM_MODEL_DEFAULT=deepseek/deepseek-v4.1-flash
-    LLM_LOG_LEVEL=basic
+| Часть | Технологии |
+| --- | --- |
+| Приложение и серверные маршруты | Nuxt 4, Vue 3, TypeScript |
+| Интерфейс | Nuxt UI 4, Lucide Icons |
+| Работа с моделями | Vercel AI SDK (`ai`, `@ai-sdk/vue`, `@ai-sdk/openai`) |
+| Разметка и формулы | Comark, KaTeX |
+| Проверки | Vitest, Nuxt Typecheck |
 
-The API key is read only by the server and is never exposed to the browser.
+Данные прогонов и сохранённые сессии записываются в файлы на сервере. Отдельная база данных для локального запуска не требуется.
 
-`LLM_LOG_LEVEL` controls JSON logs in `data/runs/`:
+## Быстрый старт
 
-- `off` disables run logging;
-- `basic` stores each question, answer, token usage (including available input, cache, text, and reasoning categories), and request timing;
-- `detailed` also stores the model request context and response metadata;
-- `raw` additionally stores every raw provider chunk returned by the LLM API.
+Понадобятся **Node.js 22.18+**, npm, URL OpenAI-совместимого API и его ключ.
 
-One run is one conversation. The server creates `run-<ISO date time>.json` after the first completed response and updates the same file after each subsequent response.
+1. Установите зависимости из lock-файла:
 
-## Development
+   ```bash
+   npm ci
+   ```
 
-Install dependencies with npm install.
+2. Создайте в корне проекта файл `.env`:
 
-Start the development server with npm run dev.
+   ```dotenv
+   LLM_BASE_URL=https://api.example.com/v1
+   LLM_API_KEY=your-api-key
+   LLM_MODEL_DEFAULT=deepseek/deepseek-v4.1-flash
+   LLM_LOG_LEVEL=basic
+   ```
 
-Open http://localhost:3000. The settings sidebar starts collapsed. `LLM_MODEL_DEFAULT` sets the initially selected model and the model restored when settings are reset; if omitted, it defaults to `deepseek/deepseek-v4.1-flash`. The model ID can be changed in the sidebar and is sent with each request. Use the link icon beside the field to open the [Polza model list](https://polza.ai/dashboard/models). Reasoning is enabled at `high` by default, matching DeepSeek V4.1 Flash; disable “Рассуждения модели” to send `none`, or choose `low`, `high`, or `max` while it is enabled. For Polza, the server sends the provider-specific `reasoning.effort` field in addition to the OpenAI-compatible setting. The selected model must support reasoning for the setting to have an effect. Temperature is disabled by default; enable “Температура” to send a value from `0` to `2` (the default field value is `1`). Other settings are independent: enable “Maximum response tokens” to edit and send a token limit, enable “Stop sequence” to stop generation at a specific sequence, enable “Показывать разбивку токенов” to display the available token categories below responses, or enable “Show rawFinishReason” to display the provider's completion reason. Missing token categories appear as `—`. These display settings can be toggled for the whole conversation.
+   Замените URL, ключ и модель на значения своего провайдера. `LLM_BASE_URL` и `LLM_API_KEY` обязательны для запросов к модели. `LLM_MODEL_DEFAULT` и `LLM_LOG_LEVEL` можно опустить: по умолчанию используются `deepseek/deepseek-v4.1-flash` и `basic`. Ключ читает только сервер; файл `.env` исключён из Git.
 
-Enable “Структурированный ответ” to send a strict JSON Schema through the OpenAI-compatible `response_format` API. The schema root must be an object, every declared property must be required, and objects must set `additionalProperties: false`. The default editor value is:
+3. Запустите приложение:
 
-    {
-      "type": "object",
-      "properties": {
-        "answer": { "type": "string" }
-      },
-      "required": ["answer"],
-      "additionalProperties": false
-    }
+   ```bash
+   npm run dev
+   ```
 
-The server validates the schema and limits it to 32 KB before sending the request to the model. The schema is included in detailed run logs.
+4. Откройте [http://localhost:3000](http://localhost:3000).
 
-## Verification
+Для проверки проекта выполните `npm run typecheck`, `npm test` и `npm run build`. Готовую сборку можно открыть локально командой `npm run preview`.
 
-Run npm run typecheck and npm run build.
+## Небольшая экскурсия
 
-Preview the production build with npm run preview.
+1. **Начните с чата (`/`).** Отправьте вопрос: ответ появляется по мере генерации, а под ним отображаются время и расход токенов. Кнопка «Новая сессия» сохраняет текущую переписку в файл и очищает чат.
+2. **Откройте настройки слева.** Смените ID модели или включите отдельные параметры запроса. Например, сравните ответ с рассуждениями и без них либо включите разбивку токенов, чтобы увидеть доступные категории расхода.
+3. **Перейдите в «Бенчмарк» (`/benchmark`).** Выберите задачи, способы промптинга, уровни рассуждения и число повторов. После запуска можно следить за прогрессом, открыть результаты предыдущих прогонов и сравнить точность, время и токены.
+4. **Попробуйте раздел «LLM temperature» (`/benchmark/temperature`).** Выберите модель и набор вопросов, затем запустите 30 запросов. История показывает ответы и сводку по каждому значению температуры. Режим рассуждений в этом эксперименте зафиксирован как `none`.
+5. **Откройте «Отчёты» (`/benchmark/reports`).** Здесь опубликованы разборы уже проведённых экспериментов; к разделу можно перейти из шапки бенчмарка.
 
-## Benchmarks and reports
+Бенчмарки отправляют много отдельных запросов к API и запускаются только после нажатия кнопки «Запустить».
 
-Open `/benchmark` for LLM reasoning. Open `/benchmark/temperature` to compare temperature 0, 0.7, and 1.2 on one exact-answer task and one generation task, five calls per combination (30 calls total). Choose the original basic question set or the new set with a code puzzle and a constrained naming task; the new set is selected by default. Select `upstage/solar-mini4` (the default), DeepSeek V4.1 Flash, or enter another model ID. Reasoning is fixed to `none` so temperature can be compared independently. The page saves the chosen question set, every prompt, raw answer, temperature, repeat number, timing, and token usage in `data/temperature-runs/`; previous runs are available in the History tab. The benchmark does not start until you press its Run button. To add a benchmark, add its name and route to `shared/benchmarks.ts` and create a page in `pages/benchmark/` using `BenchmarkShell`.
+## Настройки и данные
 
-Solar Mini 4 is suitable for this benchmark: [Polza lists `temperature` as a supported parameter](https://polza.ai/models/upstage/solar-mini4), and [Upstage accepts values from 0 to 2](https://console.upstage.ai/api/chat). Upstage documents `none` as a reasoning-off value for Solar Mini 4. The benchmark records reasoning token counts so unexpected reasoning can be spotted in the results.
+`LLM_LOG_LEVEL` управляет записью истории запросов чата в `data/runs/`:
 
-Reports are Markdown files in `data/experiments/`. Each published report needs a benchmark ID at the top of the file:
+| Значение | Что сохраняется |
+| --- | --- |
+| `off` | Логирование запросов чата выключено. |
+| `basic` | Вопросы, ответы, время запроса и доступная статистика токенов. |
+| `detailed` | Дополнительно контекст запроса к модели и метаданные ответа. |
+| `raw` | Дополнительно исходные фрагменты ответа провайдера. |
+
+Один файл `run-*.json` соответствует одному диалогу и обновляется после новых ответов. Сохранённые при создании новой сессии диалоги лежат в `data/chat-sessions/`. Прогоны бенчмарка рассуждений сохраняются в `data/runs/*.jsonl`, а температурного бенчмарка — в `data/temperature-runs/*.jsonl`. Эти каталоги исключены из Git; опубликованные отчёты в `data/experiments/` входят в репозиторий.
+
+Структурированный ответ в чате использует строгую JSON Schema: корень должен иметь тип `object`, все объявленные поля должны входить в `required`, а для объектов требуется `additionalProperties: false`. Сервер проверяет схему и ограничивает её размер 32 КБ перед отправкой провайдеру.
+
+## Как устроен проект
+
+```text
+pages/                   Чат, страницы бенчмарков и отчётов
+components/              Настройки и представление результатов
+server/api/              Маршруты чата, сессий и бенчмарков
+server/utils/            Вызовы моделей, оценка и сохранение прогонов
+shared/                  Общие типы, проверки и каталог бенчмарков
+data/experiments/        Опубликованные отчёты и материалы экспериментов
+tests/                   Проверки серверной логики и настроек
+```
+
+Чтобы добавить новый бенчмарк, зарегистрируйте его в `shared/benchmarks.ts` и создайте страницу в `pages/benchmark/` с компонентом `BenchmarkShell`.
+
+Чтобы опубликовать отчёт, добавьте Markdown-файл в `data/experiments/` и укажите ID бенчмарка в начале файла:
 
 ```md
 ---
 benchmark: reasoning
 ---
 
-# Report title
+# Название отчёта
 ```
 
-Use an ID from `shared/benchmarks.ts`. The benchmark label appears on the shared report list and the report page. Files with `handoff` in their name are not published.
+Допустимые ID перечислены в `shared/benchmarks.ts`. Файлы, в имени которых есть `handoff`, не появляются на странице отчётов.
