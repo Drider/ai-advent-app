@@ -1,3 +1,7 @@
+---
+benchmark: reasoning
+---
+
 # День 3 — DeepSeek V4.1 Flash без рассуждения
 
 Модель: `deepseek/deepseek-v4.1-flash`. Настройка API: `reasoning: {"effort":"none"}`. Все 25 вызовов вернули `reasoningTokens: 0` и завершились с `stop`. Один независимый запуск каждой из пяти задач каждым способом; для составления промпта учитываются оба вызова. Лимит ответа, stop sequence и JSON-схема не применялись.

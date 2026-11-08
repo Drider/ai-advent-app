@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { benchmarkLabel, type BenchmarkId } from '~/shared/benchmarks'
+
 interface ReportDetail {
   slug: string
   title: string
   updatedAt: string
   content: string
+  benchmarkId: BenchmarkId
 }
 
 const route = useRoute()
@@ -55,9 +58,12 @@ function formatDate(iso: string): string {
       description="Возможно, файл был перемещён или удалён."
     />
 
-    <article v-else-if="report" ref="reportContent" class="report-content">
-      <Markdown :value="report.content" />
-    </article>
+    <div v-else-if="report" class="space-y-4">
+      <UBadge color="primary" variant="subtle" size="sm">{{ benchmarkLabel(report.benchmarkId) }}</UBadge>
+      <article ref="reportContent" class="report-content">
+        <Markdown :value="report.content" />
+      </article>
+    </div>
   </div>
 </template>
 

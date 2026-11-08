@@ -53,3 +53,21 @@ The server validates the schema and limits it to 32 KB before sending the reques
 Run npm run typecheck and npm run build.
 
 Preview the production build with npm run preview.
+
+## Benchmarks and reports
+
+Open `/benchmark` for LLM reasoning. Open `/benchmark/temperature` to compare temperature 0, 0.7, and 1.2 on one exact-answer task and one generation task, five calls per combination (30 calls total). Choose the original basic question set or the new set with a code puzzle and a constrained naming task; the new set is selected by default. Select `upstage/solar-mini4` (the default), DeepSeek V4.1 Flash, or enter another model ID. Reasoning is fixed to `none` so temperature can be compared independently. The page saves the chosen question set, every prompt, raw answer, temperature, repeat number, timing, and token usage in `data/temperature-runs/`; previous runs are available in the History tab. The benchmark does not start until you press its Run button. To add a benchmark, add its name and route to `shared/benchmarks.ts` and create a page in `pages/benchmark/` using `BenchmarkShell`.
+
+Solar Mini 4 is suitable for this benchmark: [Polza lists `temperature` as a supported parameter](https://polza.ai/models/upstage/solar-mini4), and [Upstage accepts values from 0 to 2](https://console.upstage.ai/api/chat). Upstage documents `none` as a reasoning-off value for Solar Mini 4. The benchmark records reasoning token counts so unexpected reasoning can be spotted in the results.
+
+Reports are Markdown files in `data/experiments/`. Each published report needs a benchmark ID at the top of the file:
+
+```md
+---
+benchmark: reasoning
+---
+
+# Report title
+```
+
+Use an ID from `shared/benchmarks.ts`. The benchmark label appears on the shared report list and the report page. Files with `handoff` in their name are not published.

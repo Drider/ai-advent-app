@@ -77,7 +77,7 @@ const repeats = computed(() => {
         <span>Прогресс</span>
         <span>{{ progress.completed }} / {{ progress.total }} ({{ percent }}%)</span>
       </div>
-      <UProgress :value="percent" />
+      <UProgress :model-value="percent" />
     </div>
 
     <!-- Summary table -->

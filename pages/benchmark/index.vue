@@ -2,7 +2,7 @@
 import { ref, onUnmounted } from 'vue'
 import type { RunSummary } from '~/server/utils/benchmark/aggregate'
 
-useSeoMeta({ title: 'Бенчмарк' })
+useSeoMeta({ title: 'LLM reasoning — Бенчмарки' })
 
 interface RunInfo {
   runId: string
@@ -117,15 +117,7 @@ onUnmounted(stopListening)
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto p-4 space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-semibold">Бенчмарк</h1>
-      <div class="flex items-center gap-2">
-        <UButton variant="ghost" size="sm" icon="i-lucide-file-text" to="/benchmark/reports">Отчёты</UButton>
-        <UButton variant="ghost" size="sm" to="/">← Чат</UButton>
-      </div>
-    </div>
-
+  <BenchmarkShell title="LLM reasoning" description="Сравнение режимов рассуждения и способов промптинга">
     <UTabs
       v-model="tab"
       :items="[
@@ -175,5 +167,5 @@ onUnmounted(stopListening)
         </div>
       </template>
     </UTabs>
-  </div>
+  </BenchmarkShell>
 </template>

@@ -30,13 +30,14 @@ export interface CallOptions {
   model: string
   effort: ChatReasoning
   prompt: string
+  temperature?: number
   apiKey: string
   baseURL: string
   onRateLimit?: (delayMs: number) => void
 }
 
 export async function callModel(options: CallOptions): Promise<CallResult> {
-  const { model, effort, prompt, apiKey, baseURL, onRateLimit } = options
+  const { model, effort, prompt, temperature, apiKey, baseURL, onRateLimit } = options
   const provider = createOpenAI({
     apiKey,
     baseURL,
@@ -50,6 +51,7 @@ export async function callModel(options: CallOptions): Promise<CallResult> {
         model: provider.chat(model),
         prompt,
         reasoning: effort,
+        ...(temperature === undefined ? {} : { temperature }),
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(CALL_TIMEOUT_MS),
       })

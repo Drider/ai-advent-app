@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { benchmarkLabel, type BenchmarkId } from '~/shared/benchmarks'
+
 interface ReportInfo {
   slug: string
   title: string
   updatedAt: string
   excerpt: string
+  benchmarkId: BenchmarkId
 }
 
 useSeoMeta({ title: 'Отчёты бенчмарков' })
@@ -44,7 +47,10 @@ function formatDate(iso: string): string {
         spotlight-color="primary"
       >
         <template #footer>
-          <span class="text-xs text-gray-400">{{ formatDate(report.updatedAt) }}</span>
+          <div class="flex w-full flex-wrap items-center justify-between gap-2">
+            <UBadge color="primary" variant="subtle" size="sm">{{ benchmarkLabel(report.benchmarkId) }}</UBadge>
+            <span class="text-xs text-gray-400">{{ formatDate(report.updatedAt) }}</span>
+          </div>
         </template>
       </UPageCard>
     </div>
