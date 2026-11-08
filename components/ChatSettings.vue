@@ -11,6 +11,8 @@ const maxOutputTokensEnabled = defineModel<boolean>('maxOutputTokensEnabled', { 
 const maxOutputTokens = defineModel<number | null>('maxOutputTokens', { required: true })
 const stopSequenceEnabled = defineModel<boolean>('stopSequenceEnabled', { required: true })
 const stopSequence = defineModel<string>('stopSequence', { required: true })
+const temperatureEnabled = defineModel<boolean>('temperatureEnabled', { required: true })
+const temperature = defineModel<number | null>('temperature', { required: true })
 const reasoningEnabled = defineModel<boolean>('reasoningEnabled', { required: true })
 const reasoningEffort = defineModel<ReasoningEffort>('reasoningEffort', { required: true })
 const responseSchemaEnabled = defineModel<boolean>('responseSchemaEnabled', { required: true })
@@ -146,6 +148,54 @@ const reasoningOptions: Array<{ label: string; value: ReasoningEffort }> = [
           class="settings-input"
           aria-label="Stop sequence"
         />
+      </UFormField>
+    </div>
+
+    <div class="settings-option">
+      <UCheckbox
+        v-model="temperatureEnabled"
+        label="Температура"
+        color="primary"
+      />
+
+      <UFormField
+        name="temperature"
+        description="Случайность ответа: от 0 (стабильнее) до 2 (разнообразнее). Передаётся только при включённой галочке."
+        :error="temperatureEnabled ? validationMessage || undefined : undefined"
+      >
+        <UInputNumber
+          v-model="temperature"
+          :min="0"
+          :max="2"
+          :step="0.1"
+          :format-options="{ maximumFractionDigits: 2 }"
+          :disabled="!temperatureEnabled"
+          class="settings-number"
+          aria-label="Температура"
+        >
+          <template #decrement>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              icon="i-lucide-minus"
+              :disabled="!temperatureEnabled"
+              aria-label="Уменьшить температуру"
+            />
+          </template>
+          <template #increment>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              icon="i-lucide-plus"
+              :disabled="!temperatureEnabled"
+              aria-label="Увеличить температуру"
+            />
+          </template>
+        </UInputNumber>
       </UFormField>
     </div>
 

@@ -11,6 +11,9 @@ const RESPONSE_SCHEMA_MAX_DESCRIPTION_LENGTH = 2_000
 const MODEL_ID_MAX_LENGTH = 200
 
 export const DEFAULT_CHAT_MODEL = 'deepseek/deepseek-v4.1-flash'
+export const DEFAULT_TEMPERATURE = 1
+export const MIN_TEMPERATURE = 0
+export const MAX_TEMPERATURE = 2
 
 export interface NewSessionState {
   settings: ChatSettingsState
@@ -234,6 +237,18 @@ export function validateChatRequest(input: unknown): ChatRequestBody {
     throw new Error('stopSequence must be a non-empty string')
   }
 
+  if (
+    body.temperature !== undefined
+    && (
+      typeof body.temperature !== 'number'
+      || !Number.isFinite(body.temperature)
+      || body.temperature < MIN_TEMPERATURE
+      || body.temperature > MAX_TEMPERATURE
+    )
+  ) {
+    throw new Error('temperature must be a finite number between 0 and 2')
+  }
+
   const validReasoning = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
   if (body.reasoning !== undefined && !validReasoning.has(body.reasoning)) {
     throw new Error('reasoning must be one of none, minimal, low, medium, high, xhigh, max')
@@ -253,6 +268,9 @@ export function validateChatRequest(input: unknown): ChatRequestBody {
     ...(body.stopSequence === undefined
       ? {}
       : { stopSequence: body.stopSequence }),
+    ...(body.temperature === undefined
+      ? {}
+      : { temperature: body.temperature }),
     ...(body.reasoning === undefined
       ? {}
       : { reasoning: body.reasoning }),

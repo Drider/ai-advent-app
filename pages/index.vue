@@ -17,6 +17,9 @@ import type {
 import {
   buildChatRequestBody,
   createDefaultChatSettings,
+  DEFAULT_TEMPERATURE,
+  MAX_TEMPERATURE,
+  MIN_TEMPERATURE,
   formatAssistantMessage,
   parseResponseSchemaText,
   prepareNewSessionState,
@@ -39,7 +42,19 @@ const markdownPlugins = [math()]
 const defaultModel = useRuntimeConfig().public.chatDefaultModel
 
 const input = ref('')
-const chatSettings = reactive<ChatSettingsState>(createDefaultChatSettings(defaultResponseSchema, defaultModel))
+const chatSettings = reactive<ChatSettingsState>({
+  ...createDefaultChatSettings(defaultResponseSchema, defaultModel),
+  temperatureEnabled: false,
+  temperature: DEFAULT_TEMPERATURE,
+})
+const temperatureEnabled = computed({
+  get: () => chatSettings.temperatureEnabled ?? false,
+  set: (value: boolean) => { chatSettings.temperatureEnabled = value },
+})
+const temperature = computed({
+  get: () => chatSettings.temperature ?? DEFAULT_TEMPERATURE,
+  set: (value: number | null) => { chatSettings.temperature = value },
+})
 const sidebarOpen = ref(false)
 const validationMessage = ref('')
 const modelValidationMessage = ref('')
@@ -88,7 +103,7 @@ function getRequestOptions(): ChatRequestOptions | undefined {
     return undefined
   }
 
-  const body: Pick<ChatRequestBody, 'model' | 'maxOutputTokens' | 'stopSequence' | 'reasoning' | 'responseSchema'> = {
+  const body: Pick<ChatRequestBody, 'model' | 'maxOutputTokens' | 'stopSequence' | 'temperature' | 'reasoning' | 'responseSchema'> = {
     model,
     reasoning: chatSettings.reasoningEnabled ? chatSettings.reasoningEffort : 'none',
   }
@@ -111,6 +126,22 @@ function getRequestOptions(): ChatRequestOptions | undefined {
     }
 
     body.stopSequence = chatSettings.stopSequence
+  }
+
+  if (temperatureEnabled.value) {
+    const value = temperature.value
+
+    if (
+      typeof value !== 'number'
+      || !Number.isFinite(value)
+      || value < MIN_TEMPERATURE
+      || value > MAX_TEMPERATURE
+    ) {
+      validationMessage.value = 'Введите температуру от 0 до 2.'
+      return undefined
+    }
+
+    body.temperature = value
   }
 
   if (chatSettings.responseSchemaEnabled) {
@@ -194,6 +225,12 @@ async function handleNewSession(): Promise<void> {
       defaultModel,
     )
     Object.assign(chatSettings, newSessionState.settings)
+    if (!chatSettings.preserveSettingsOnNewSession) {
+      Object.assign(chatSettings, {
+        temperatureEnabled: false,
+        temperature: DEFAULT_TEMPERATURE,
+      })
+    }
     validationMessage.value = ''
     modelValidationMessage.value = ''
     sidebarOpen.value = newSessionState.sidebarOpen
@@ -244,6 +281,8 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
         v-model:max-output-tokens="chatSettings.maxOutputTokens"
         v-model:stop-sequence-enabled="chatSettings.stopSequenceEnabled"
         v-model:stop-sequence="chatSettings.stopSequence"
+        v-model:temperature-enabled="temperatureEnabled"
+        v-model:temperature="temperature"
         v-model:reasoning-enabled="chatSettings.reasoningEnabled"
         v-model:reasoning-effort="chatSettings.reasoningEffort"
         v-model:response-schema-enabled="chatSettings.responseSchemaEnabled"

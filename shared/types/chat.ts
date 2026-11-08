@@ -34,6 +34,9 @@ export interface ChatSettingsState {
   maxOutputTokens: number | null
   stopSequenceEnabled: boolean
   stopSequence: string
+  // Опциональны для совместимости с сохранёнными настройками старых сессий.
+  temperatureEnabled?: boolean
+  temperature?: number | null
   reasoningEnabled: boolean
   reasoningEffort: ReasoningEffort
   responseSchemaEnabled: boolean
@@ -60,6 +63,7 @@ export interface ChatRequestBody {
   runId?: string
   maxOutputTokens?: number
   stopSequence?: string
+  temperature?: number
   reasoning?: ChatReasoning
   responseSchema?: ChatResponseSchema
 }

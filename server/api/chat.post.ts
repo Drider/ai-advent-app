@@ -81,6 +81,7 @@ export default defineEventHandler(async (event) => {
     runId: requestRunId,
     maxOutputTokens,
     stopSequence,
+    temperature,
     reasoning = 'high',
     responseSchema,
   } = await readChatRequest(event)
@@ -112,6 +113,7 @@ export default defineEventHandler(async (event) => {
     ...(responseOutput === undefined ? {} : { output: responseOutput }),
     ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
     ...(stopSequence === undefined ? {} : { stopSequences: [stopSequence] }),
+    ...(temperature === undefined ? {} : { temperature }),
     reasoning,
     includeRawChunks: logLevel === 'raw',
     onChunk: ({ chunk }) => {
@@ -135,6 +137,7 @@ export default defineEventHandler(async (event) => {
             messages: modelMessages as unknown[],
             ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
             ...(stopSequence === undefined ? {} : { stopSequences: [stopSequence] }),
+            ...(temperature === undefined ? {} : { temperature }),
             reasoning,
             ...(responseSchema === undefined ? {} : { responseSchema }),
           },
