@@ -4,7 +4,7 @@ import { benchmarkLabel, type BenchmarkId } from '~/shared/benchmarks'
 interface ReportInfo {
   slug: string
   title: string
-  updatedAt: string
+  date: string
   excerpt: string
   benchmarkId: BenchmarkId
 }
@@ -14,7 +14,7 @@ useSeoMeta({ title: 'Отчёты бенчмарков' })
 const { data: reports, status } = await useFetch<ReportInfo[]>('/api/benchmark/reports')
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 </script>
 
@@ -46,7 +46,7 @@ function formatDate(iso: string): string {
         <template #footer>
           <div class="flex w-full flex-wrap items-center justify-between gap-2">
             <UBadge color="primary" variant="subtle" size="sm">{{ benchmarkLabel(report.benchmarkId) }}</UBadge>
-            <span class="text-xs text-gray-400">{{ formatDate(report.updatedAt) }}</span>
+            <span class="text-xs text-gray-400">{{ formatDate(report.date) }}</span>
           </div>
         </template>
       </UPageCard>

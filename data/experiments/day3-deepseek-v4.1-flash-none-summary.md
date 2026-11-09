@@ -1,5 +1,6 @@
 ---
 benchmark: reasoning
+date: 2026-11-07
 ---
 
 # День 3 — DeepSeek V4.1 Flash без рассуждения

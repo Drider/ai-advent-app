@@ -1,5 +1,6 @@
 ---
 benchmark: battle
+date: 2026-11-09
 ---
 
 # День 5: LLM battle — DeepSeek V4.1 Flash, лучший баланс точности и стоимости

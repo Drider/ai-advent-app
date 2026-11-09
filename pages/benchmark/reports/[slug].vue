@@ -4,7 +4,7 @@ import { benchmarkLabel, type BenchmarkId } from '~/shared/benchmarks'
 interface ReportDetail {
   slug: string
   title: string
-  updatedAt: string
+  date: string
   content: string
   benchmarkId: BenchmarkId
 }
@@ -35,7 +35,7 @@ function wrapTables(): void {
 watch(() => report.value?.content, () => wrapTables(), { immediate: true, flush: 'post' })
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 </script>
 
@@ -43,7 +43,7 @@ function formatDate(iso: string): string {
   <div class="max-w-3xl mx-auto p-4 space-y-6">
     <div class="flex items-center justify-between">
       <UButton variant="ghost" size="sm" to="/benchmark/reports">← Отчёты</UButton>
-      <span v-if="report" class="text-xs text-gray-400">{{ formatDate(report.updatedAt) }}</span>
+      <span v-if="report" class="text-xs text-gray-400">{{ formatDate(report.date) }}</span>
     </div>
 
     <div v-if="status === 'pending'" class="text-sm text-gray-400">

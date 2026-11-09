@@ -1,5 +1,6 @@
 ---
 benchmark: temperature
+date: 2026-11-08
 ---
 
 # День 4: LLM temperature — повторяемость, ошибки и качество идей
