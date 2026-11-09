@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 import type { ChatReasoning } from '../../../shared/types/chat'
 import { createPolzaReasoningFetch } from '../polza-reasoning'
+import type { RateGate } from './pool'
 import type { CallResult, CellStatus } from './types'
 
 const CALL_TIMEOUT_MS = 10 * 60 * 1000
@@ -17,11 +18,26 @@ function sleep(ms: number): Promise<void> {
 }
 
 function isRetryable(err: unknown): boolean {
+  if (err && typeof err === 'object' && 'statusCode' in err) {
+    if ([408, 429, 502, 503].includes(Number(err.statusCode))) return true
+  }
   const msg = String(err).toLowerCase()
-  return msg.includes('429') || msg.includes('503') || msg.includes('econnreset') || msg.includes('network')
+  return msg.includes('429') || msg.includes('503') || msg.includes('502') || msg.includes('408') || msg.includes('econnreset') || msg.includes('network')
 }
 
 function retryAfterMs(err: unknown): number | null {
+  if (err && typeof err === 'object' && 'responseHeaders' in err) {
+    const headers = err.responseHeaders
+    if (headers && typeof headers === 'object') {
+      const value = Object.entries(headers).find(([name]) => name.toLowerCase() === 'retry-after')?.[1]
+      if (typeof value === 'string') {
+        const seconds = Number(value)
+        if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000
+        const date = Date.parse(value)
+        if (Number.isFinite(date)) return Math.max(0, date - Date.now())
+      }
+    }
+  }
   const match = String(err).match(/retry-after[:\s]+(\d+)/i)
   return match ? parseInt(match[1]!, 10) * 1000 : null
 }
@@ -31,13 +47,14 @@ export interface CallOptions {
   effort: ChatReasoning
   prompt: string
   temperature?: number
+  maxOutputTokens?: number
   apiKey: string
   baseURL: string
-  onRateLimit?: (delayMs: number) => void
+  rateGate?: RateGate
 }
 
 export async function callModel(options: CallOptions): Promise<CallResult> {
-  const { model, effort, prompt, temperature, apiKey, baseURL, onRateLimit } = options
+  const { model, effort, prompt, temperature, maxOutputTokens, apiKey, baseURL, rateGate } = options
   const provider = createOpenAI({
     apiKey,
     baseURL,
@@ -45,6 +62,7 @@ export async function callModel(options: CallOptions): Promise<CallResult> {
   })
 
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    await rateGate?.acquire()
     const startedAtMs = Date.now()
     try {
       const result = streamText({
@@ -52,6 +70,7 @@ export async function callModel(options: CallOptions): Promise<CallResult> {
         prompt,
         reasoning: effort,
         ...(temperature === undefined ? {} : { temperature }),
+        ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(CALL_TIMEOUT_MS),
       })
@@ -80,7 +99,7 @@ export async function callModel(options: CallOptions): Promise<CallResult> {
     } catch (err) {
       if (!isRetryable(err) || attempt >= RETRY_DELAYS_MS.length) throw err
       const delay = retryAfterMs(err) ?? jitter(RETRY_DELAYS_MS[attempt]!)
-      onRateLimit?.(delay)
+      rateGate?.pause(delay)
       await sleep(delay)
     }
   }

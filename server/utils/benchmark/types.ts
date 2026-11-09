@@ -24,6 +24,7 @@ export interface BenchmarkConfig {
   methods: BenchmarkMethod[]
   repeats: number
   concurrency: number
+  requestsPerMinute?: number
 }
 
 export interface CallResult {

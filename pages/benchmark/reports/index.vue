@@ -20,12 +20,9 @@ function formatDate(iso: string): string {
 
 <template>
   <div class="max-w-5xl mx-auto p-4 space-y-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold">Отчёты бенчмарков</h1>
-        <p class="text-sm text-gray-500">Выводы и разборы прогонов — способы промптинга, режимы рассуждения, сравнения моделей</p>
-      </div>
-      <UButton variant="ghost" size="sm" to="/benchmark">← Бенчмарк</UButton>
+    <div>
+      <h1 class="text-xl font-semibold">Отчёты бенчмарков</h1>
+      <p class="text-sm text-gray-500">Выводы и разборы прогонов — способы промптинга, режимы рассуждения, сравнения моделей</p>
     </div>
 
     <div v-if="status === 'pending'" class="text-sm text-gray-400">

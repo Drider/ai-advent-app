@@ -1,6 +1,7 @@
 export const BENCHMARKS = [
   { id: 'reasoning', label: 'LLM reasoning', path: '/benchmark' },
   { id: 'temperature', label: 'LLM temperature', path: '/benchmark/temperature' },
+  { id: 'battle', label: 'LLM battle', path: '/benchmark/battle' },
 ] as const
 
 export type BenchmarkId = (typeof BENCHMARKS)[number]['id']

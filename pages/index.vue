@@ -315,19 +315,6 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
             :disabled="isBusy || sessionSaving"
             @click="handleNewSession"
           />
-          <UButton
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            to="/benchmark"
-            label="Бенчмарк"
-          />
-          <UColorModeButton
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            aria-label="Переключить тему"
-          />
         </div>
       </header>
 
@@ -438,7 +425,7 @@ function isStreamingPart(message: ChatMessage, part: { state?: string }): boolea
 <style scoped>
 .chat-shell {
   display: flex;
-  height: 100dvh;
+  height: calc(100dvh - 3.5rem);
   overflow: hidden;
   background: var(--ui-bg);
 }

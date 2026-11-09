@@ -1,7 +1,8 @@
 <script setup lang="ts">
-// Корневой компонент передаёт управление маршрутам Nuxt.
+// Общая навигация остаётся видимой на всех маршрутах Nuxt.
 </script>
 
 <template>
+  <AppNavigation />
   <NuxtPage />
 </template>

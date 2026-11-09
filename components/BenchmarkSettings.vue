@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { BENCHMARK_TASKS } from '~/server/utils/benchmark/tasks'
+import { BENCHMARK_METHODS } from '~/shared/benchmark-methods'
 
 const ALL_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const
-const ALL_METHODS = ['direct', 'step_by_step', 'self_prompt', 'experts'] as const
+const ALL_METHODS = BENCHMARK_METHODS.map(method => method.id)
 const ALL_TASK_IDS = BENCHMARK_TASKS.map(t => t.id)
 
 const props = defineProps<{
@@ -18,6 +19,7 @@ const emit = defineEmits<{
     methods: string[]
     repeats: number
     concurrency: number
+    requestsPerMinute: number
     judgeModel: string
     resume: boolean
     runId?: string
@@ -31,6 +33,7 @@ const selectedTaskIds = ref<string[]>([...ALL_TASK_IDS])
 const selectedMethods = ref<string[]>([...ALL_METHODS])
 const repeats = ref(5)
 const concurrency = ref(5)
+const requestsPerMinute = ref(0)
 const resumeRunId = ref('')
 
 const canStart = computed(() =>
@@ -38,7 +41,9 @@ const canStart = computed(() =>
   && selectedEfforts.value.length > 0
   && selectedTaskIds.value.length > 0
   && selectedMethods.value.length > 0
-  && repeats.value >= 1,
+  && repeats.value >= 1
+  && Number.isSafeInteger(requestsPerMinute.value)
+  && requestsPerMinute.value >= 0,
 )
 
 function toggle<T>(arr: T[], value: T): T[] {
@@ -53,6 +58,7 @@ function handleStart(): void {
     methods: selectedMethods.value,
     repeats: repeats.value,
     concurrency: concurrency.value,
+    requestsPerMinute: requestsPerMinute.value,
     judgeModel: judgeModel.value.trim() || model.value.trim(),
     resume: !!resumeRunId.value.trim(),
     runId: resumeRunId.value.trim() || undefined,
@@ -88,13 +94,13 @@ function handleStart(): void {
     <UFormField label="Способы промптинга">
       <div class="flex flex-wrap gap-2">
         <UButton
-          v-for="method in ALL_METHODS"
-          :key="method"
+          v-for="method in BENCHMARK_METHODS"
+          :key="method.id"
           size="sm"
-          :variant="selectedMethods.includes(method) ? 'solid' : 'outline'"
-          @click="selectedMethods = toggle(selectedMethods, method)"
+          :variant="selectedMethods.includes(method.id) ? 'solid' : 'outline'"
+          @click="selectedMethods = toggle(selectedMethods, method.id)"
         >
-          {{ method }}
+          {{ method.label }}
         </UButton>
       </div>
     </UFormField>
@@ -108,7 +114,7 @@ function handleStart(): void {
           :variant="selectedTaskIds.includes(task.id) ? 'solid' : 'outline'"
           @click="selectedTaskIds = toggle(selectedTaskIds, task.id)"
         >
-          {{ task.id }}
+          {{ task.title }}
         </UButton>
       </div>
     </UFormField>
@@ -121,6 +127,10 @@ function handleStart(): void {
         <UInput v-model.number="concurrency" type="number" :min="1" :max="10" />
       </UFormField>
     </div>
+
+    <UFormField label="Предел запросов на модель, в минуту" description="0 — без ручного ограничения. Предел действует в этом прогоне и учитывает повторы и запросы модели-судьи. Лимит Polza зависит от модели и организации.">
+      <UInput v-model.number="requestsPerMinute" type="number" :min="0" class="w-32" />
+    </UFormField>
 
     <UFormField label="Продолжить прогон (runId)">
       <UInput v-model="resumeRunId" placeholder="2026-11-07T..." class="font-mono text-sm" />

@@ -5,4 +5,5 @@ node_modules/
 /data/chat-sessions/
 /data/runs/
 /data/temperature-runs/
+/data/battle-runs/
 .superpowers/

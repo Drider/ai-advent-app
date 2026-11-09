@@ -3,17 +3,35 @@ function sleep(ms: number): Promise<void> {
 }
 
 export class RateGate {
-  private gated: Promise<void> | null = null
+  private pauseUntil = 0
+  private starts: number[] = []
+
+  constructor(private readonly requestsPerMinute = 0) {}
 
   async wait(): Promise<void> {
-    if (this.gated) await this.gated
+    while (Date.now() < this.pauseUntil) {
+      await sleep(this.pauseUntil - Date.now())
+    }
+  }
+
+  async acquire(): Promise<void> {
+    while (true) {
+      await this.wait()
+      const now = Date.now()
+      if (now < this.pauseUntil) continue
+      if (this.requestsPerMinute === 0) return
+      this.starts = this.starts.filter(start => start > now - 60_000)
+      const oldest = this.starts[0]
+      if (this.starts.length < this.requestsPerMinute) {
+        this.starts.push(now)
+        return
+      }
+      await sleep(Math.max(1, oldest! + 60_000 - now))
+    }
   }
 
   pause(delayMs: number): void {
-    if (this.gated) return
-    this.gated = sleep(delayMs).then(() => {
-      this.gated = null
-    })
+    this.pauseUntil = Math.max(this.pauseUntil, Date.now() + delayMs)
   }
 }
 

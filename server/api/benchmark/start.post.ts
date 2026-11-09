@@ -39,6 +39,10 @@ export default defineEventHandler(async (event) => {
 
   const repeats = typeof body.repeats === 'number' && body.repeats >= 1 ? Math.floor(body.repeats) : 1
   const concurrency = typeof body.concurrency === 'number' && body.concurrency >= 1 ? Math.min(Math.floor(body.concurrency), 10) : 3
+  const requestsPerMinute = body.requestsPerMinute === undefined ? 0 : body.requestsPerMinute
+  if (!Number.isSafeInteger(requestsPerMinute) || (requestsPerMinute as number) < 0) {
+    throw createError({ statusCode: 400, statusMessage: 'requestsPerMinute must be a non-negative integer' })
+  }
   const resume = body.resume === true && typeof body.runId === 'string'
 
   const runId = (resume && typeof body.runId === 'string') ? body.runId : new Date().toISOString().replace(/[:.]/g, '-')
@@ -48,7 +52,7 @@ export default defineEventHandler(async (event) => {
     if (!existing) throw createError({ statusCode: 404, statusMessage: 'Run not found for resume' })
   }
 
-  const benchConfig: BenchmarkConfig = { model, efforts, taskIds, methods, repeats, concurrency }
+  const benchConfig: BenchmarkConfig = { model, efforts, taskIds, methods, repeats, concurrency, requestsPerMinute: requestsPerMinute as number }
 
   const judgeModel = typeof body.judgeModel === 'string' ? body.judgeModel : model
 

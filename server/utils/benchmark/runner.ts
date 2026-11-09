@@ -55,7 +55,10 @@ export function startRun(options: StartRunOptions): RunState {
   if (!resume) initRun(runId, config)
 
   const tasks = BENCHMARK_TASKS.filter(t => config.taskIds.includes(t.id))
-  const gate = new RateGate()
+  const gate = new RateGate(config.requestsPerMinute ?? 0)
+  const judgeGate = judgeConfig.judgeModel === config.model
+    ? gate
+    : new RateGate(config.requestsPerMinute ?? 0)
 
   // Build ordered job list: interleave by (method, effort) to spread load
   const jobs: PoolJob<void>[] = []
@@ -71,7 +74,7 @@ export function startRun(options: StartRunOptions): RunState {
           state.progress.total++
           jobs.push({
             key,
-            run: inflightAtStart => runCell({ task, method, effort, repeat, config, apiKey, baseURL, judgeConfig, gate, inflightAtStart, state }),
+            run: inflightAtStart => runCell({ task, method, effort, repeat, config, apiKey, baseURL, judgeConfig, gate, judgeGate, inflightAtStart, state }),
           })
         }
       }
@@ -113,12 +116,13 @@ interface CellJobOptions {
   baseURL: string
   judgeConfig: JudgeConfig
   gate: RateGate
+  judgeGate: RateGate
   inflightAtStart: number
   state: RunState
 }
 
 async function runCell(opts: CellJobOptions): Promise<void> {
-  const { task, method, effort, repeat, config, apiKey, baseURL, judgeConfig, gate, inflightAtStart, state } = opts
+  const { task, method, effort, repeat, config, apiKey, baseURL, judgeConfig, gate, judgeGate, inflightAtStart, state } = opts
 
   const key = cellKey({ model: config.model, effort, taskId: task.id, method, repeat })
   const callOpts = {
@@ -126,7 +130,7 @@ async function runCell(opts: CellJobOptions): Promise<void> {
     effort,
     apiKey,
     baseURL,
-    onRateLimit: (delayMs: number) => gate.pause(delayMs),
+    rateGate: gate,
   }
 
   let cell: BenchmarkCell
@@ -189,7 +193,7 @@ async function runCell(opts: CellJobOptions): Promise<void> {
   appendCell(state.id, cell)
   emit(state, { kind: 'cell', payload: cell })
 
-  const grade = await gradeCell(cell, task, judgeConfig)
+  const grade = await gradeCell(cell, task, judgeConfig, judgeGate)
   appendGrade(state.id, grade)
   emit(state, { kind: 'grade', payload: grade })
 
@@ -201,6 +205,7 @@ async function gradeCell(
   cell: BenchmarkCell,
   task: BenchmarkTask,
   judgeConfig: JudgeConfig,
+  judgeGate: RateGate,
 ): Promise<BenchmarkGrade> {
   if (cell.status === 'error' || cell.status === 'truncated' || cell.status === 'empty' || cell.status === 'refused') {
     return { type: 'grade', key: cell.key, verdict: 'incorrect' }
@@ -211,7 +216,7 @@ async function gradeCell(
     return { type: 'grade', key: cell.key, verdict }
   }
 
-  const judged = await judgeAnswer(cell.answer, task, judgeConfig)
+  const judged = await judgeAnswer(cell.answer, task, judgeConfig, judgeGate)
   return { type: 'grade', key: cell.key, verdict: judged.verdict, judged: true, judgeRaw: judged.judgeRaw }
 }
 

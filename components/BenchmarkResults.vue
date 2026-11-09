@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RunSummary } from '~/server/utils/benchmark/aggregate'
+import { getTask } from '~/server/utils/benchmark/tasks'
+import { benchmarkMethodLabel } from '~/shared/benchmark-methods'
 
 const props = defineProps<{
   summary: RunSummary | null
@@ -38,6 +40,7 @@ const methodColumns = [
 const methodRows = computed(() =>
   (props.summary?.byMethodEffort ?? []).map(row => ({
     ...row,
+    method: benchmarkMethodLabel(row.method),
     medianDurationMs: (row.medianDurationMs / 1000).toFixed(1),
     p90DurationMs: (row.p90DurationMs / 1000).toFixed(1),
   })),
@@ -118,13 +121,13 @@ const repeats = computed(() => {
                   :key="method"
                   class="border border-gray-200 px-2 py-1 bg-gray-50"
                 >
-                  {{ method }}
+                  {{ benchmarkMethodLabel(method) }}
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="taskId in taskIds" :key="taskId">
-                <td class="border border-gray-200 px-2 py-1 font-mono">{{ taskId }}</td>
+                <td class="border border-gray-200 px-2 py-1">{{ getTask(taskId)?.title ?? taskId }}</td>
                 <td
                   v-for="method in methods"
                   :key="method"

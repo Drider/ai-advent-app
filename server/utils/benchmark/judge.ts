@@ -1,6 +1,5 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { streamText } from 'ai'
-import { createPolzaReasoningFetch } from '../polza-reasoning'
+import { callModel } from './call'
+import type { RateGate } from './pool'
 import type { BenchmarkTask, Verdict } from './types'
 
 export interface JudgeConfig {
@@ -13,23 +12,20 @@ export async function judgeAnswer(
   answerText: string,
   task: BenchmarkTask,
   config: JudgeConfig,
+  rateGate?: RateGate,
 ): Promise<{ verdict: Verdict, judgeRaw: string }> {
-  const provider = createOpenAI({
-    apiKey: config.apiKey,
-    baseURL: config.baseURL,
-    fetch: createPolzaReasoningFetch(config.baseURL),
-  })
-
   const prompt = `Задача: ${task.question}\n\nЭталонный ответ: ${task.answerKey}\n\nОтвет модели:\n${answerText}\n\nСодержит ли ответ модели правильный итоговый ответ? Оцени только финальный вывод, игнорируя промежуточные рассуждения. Ответь строго JSON: {"correct": true} или {"correct": false}.`
 
   try {
-    const result = streamText({
-      model: provider.chat(config.judgeModel),
+    const result = await callModel({
+      model: config.judgeModel,
       prompt,
-      reasoning: 'none',
-      maxRetries: 0,
+      effort: 'none',
+      apiKey: config.apiKey,
+      baseURL: config.baseURL,
+      rateGate,
     })
-    const text = await result.text
+    const text = result.answer
     const match = text.match(/\{[^}]*"correct"\s*:\s*(true|false)[^}]*\}/)
     if (match) {
       const correct = match[1] === 'true'
